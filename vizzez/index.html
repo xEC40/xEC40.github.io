@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorting Vizzzez</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div id="barsContainer" class="bars-container"></div>
+        <canvas id="canvas"></canvas>
+    </div>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label>Bars</label>
+            <input type="range" id="numBars" min="10" max="150" value="50">
+            <span id="numBarsValue">50</span>
+        </div>
+        <div class="control-group">
+            <button id="reset">Reset</button>
+            <button id="playPause">▶ Play</button>
+        </div>
+        <div class="control-group">
+            <label>Speed</label>
+            <input type="range" id="speed" min="1" max="200" value="100">
+            <span id="speedValue">100</span>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
