@@ -8,6 +8,890 @@
     <link rel="stylesheet" href="style.css">
     <link rel="shortcut icon" href=favicon.ico>
 
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const homeNavElement = document.getElementById('logoCanvas'); // Get the target nav element
+        const content = document.getElementById('content');
+      
+        // --- Error Handling: Check if target element exists ---
+        if (!homeNavElement) {
+          console.error("Entrance Animation Error: Target element '#logoCanvas' not found. Skipping animation.");
+          if (content) content.style.display = 'block'; // Show content immediately if target missing
+          return; // Stop script execution
+        }
+        // --- End Error Handling ---
+      
+        // Ensure content is hidden initially (redundant if CSS handles it, but safe)
+        if (content) content.style.display = 'none';
+        // Ensure nav element is hidden initially (needs opacity: 0 via CSS or inline style)
+        homeNavElement.style.opacity = 0;
+        homeNavElement.style.transition = 'opacity 0.8s ease-in'; // Prepare for fade-in
+      
+        // Create overlay with optimized DOM insertion (single operation)
+        const overlay = document.createElement('div');
+        overlay.id = 'entrance-overlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background-color:black;z-index:9999;display:flex;justify-content:center;align-items:center;';
+      
+        const canvas = document.createElement('canvas');
+        canvas.id = 'entrance-canvas';
+      
+        // Batch DOM operations
+        overlay.appendChild(canvas);
+        document.body.appendChild(overlay);
+      
+        // --- MODIFIED onComplete Logic ---
+        const onAnimationComplete = function() {
+          // 1. Start fading in the nav element almost immediately
+          requestAnimationFrame(() => {
+              homeNavElement.style.opacity = 1;
+          });
+      
+          // 2. Start fading out the overlay slightly after nav fade starts
+          setTimeout(() => {
+              requestAnimationFrame(() => {
+                  overlay.style.transition = 'opacity 1.2s ease-out'; // Slightly longer fade for overlay
+                  overlay.style.opacity = 0;
+              });
+          }, 200); // Start overlay fade 200ms after nav fade starts
+      
+          // 3. Remove overlay, cleanup, and show main content AFTER overlay fade finishes
+          setTimeout(() => {
+              if (overlay.parentNode) { // Check if overlay still exists before removing
+                   overlay.remove();
+              }
+              animation.cleanup(); // Explicitly clean up resources
+              if (content) content.style.display = 'block'; // Show the rest of the content
+          }, 1400); // 200ms delay + 1200ms overlay fade duration
+        };
+        // --- END MODIFIED onComplete Logic ---
+      
+        // Create animation instance, passing the TARGET ELEMENT ID
+        const animation = new EntranceAnimation(canvas, 'logoCanvas', onAnimationComplete);
+      
+        // Defer animation start to next frame for better initial load
+        requestAnimationFrame(() => {
+          animation.start();
+        });
+      });
+      
+      class EntranceAnimation {
+        constructor(canvas, targetElementId, onComplete) { // Added targetElementId
+          // Core properties
+          this.canvas = canvas;
+          this.ctx = canvas.getContext('2d', {
+            alpha: false,
+            desynchronized: true
+          });
+          this.targetElementId = targetElementId; // Store the ID
+          this.targetElement = null; // Reference to the actual element
+          this.targetRect = null; // To store getBoundingClientRect()
+          this.onComplete = onComplete;
+          this.animationLength = 6000; // Original animation length
+          this.startTime = null;
+          this.lastTime = null;
+          this.isRunning = false;
+          this.frameID = null;
+      
+          // Optimization: Pre-calculate constants
+          this.TWO_PI = Math.PI * 2;
+          this.HALF_PI = Math.PI / 2;
+          this.particles = [];
+          this.dimensions = 8;
+          this.numParticles = 800;
+          this.width = 0;
+          this.height = 0;
+          this.maxSpeed = 2.5;
+          this.cubeHangTime = 0;
+      
+          // Shrink phase properties
+          this.shrinkPhase = false;
+          this.shrinkStartTime = 0;
+          this.shrinkDuration = 1000;
+          this.finalCubeSize = 15;
+      
+          // --- NEW: Stream Phase Properties ---
+          this.streamPhase = false;
+          this.streamStartTime = 0;
+          this.streamDuration = 1800; // Duration for particles to reach the target
+          // --- END NEW ---
+      
+          // Optimization: Reuse objects
+          this._pos = { x: 0, y: 0, z: 0 };
+          this._projected = { x: 0, y: 0, scale: 0 };
+      
+          // Structures - unchanged visually
+          this.structures = [
+            { type: 'sphere', weight: 0, targetWeight: 1, radius: 180 },
+            { type: 'torus', weight: 0, targetWeight: 0, radius: 200, tubeRadius: 80 },
+            { type: 'spiral', weight: 0, targetWeight: 0, radius: 250, turns: 3, height: 200 },
+            { type: 'grid', weight: 0, targetWeight: 0, size: 300, levels: 8 },
+            { type: 'solidCube', weight: 0, targetWeight: 0, size: 80 }
+          ];
+      
+          this.currentPhase = 0;
+          this.phases = [
+            { duration: 0.2, transitions: [{ index: 0, target: 1 }] },
+            { duration: 0.2, transitions: [{ index: 0, target: 0 }, { index: 1, target: 1 }] },
+            { duration: 0.2, transitions: [{ index: 1, target: 0 }, { index: 2, target: 1 }] },
+            { duration: 0.2, transitions: [{ index: 2, target: 0 }, { index: 3, target: 1 }] },
+            { duration: 0.2, transitions: [{ index: 3, target: 0 }, { index: 4, target: 1 }] }
+          ];
+      
+          this.camera = {
+            position: { x: 0, y: 0, z: 800 },
+            rotation: { x: 0, y: 0, z: 0 },
+            sin: { x: 0, y: 0, z: 0 },
+            cos: { x: 1, y: 1, z: 1 }
+          };
+      
+          // Bind methods
+          this.resize = this.resize.bind(this);
+          this.render = this.render.bind(this);
+          this.cleanup = this.cleanup.bind(this);
+          this.updateTargetRect = this.updateTargetRect.bind(this); // Bind new method
+      
+          // Initialize particles
+          this.initParticles();
+      
+          // Add resize listener & initial resize
+          window.addEventListener('resize', this.resize);
+          this.resize(); // Initial resize also calls updateTargetRect
+      
+          // Optimization: Pre-allocate arrays
+          this.zSortedIndices = new Array(this.numParticles);
+          for (let i = 0; i < this.numParticles; i++) {
+            this.zSortedIndices[i] = i;
+          }
+          this.gridPoints = new Array(Math.min(this.numParticles, 400));
+          for (let i = 0; i < this.gridPoints.length; i++) {
+            this.gridPoints[i] = { index: 0, x: 0, y: 0 };
+          }
+        }
+      
+        // --- NEW: Method to update target element's position ---
+        updateTargetRect() {
+            if (!this.targetElement) {
+                this.targetElement = document.getElementById(this.targetElementId);
+            }
+            if (this.targetElement) {
+                // Ensure element is visible (or layout calculated) before getting rect
+                // May need refinement if target element's position changes dynamically
+                // after initial load but before animation ends.
+                this.targetRect = this.targetElement.getBoundingClientRect();
+            } else {
+                // Handle case where element might not be found (e.g., removed dynamically)
+                console.warn(`Entrance Animation: Target element '#${this.targetElementId}' not found during update.`);
+                this.targetRect = null;
+            }
+        }
+        // --- END NEW ---
+      
+        resize() {
+          const width = window.innerWidth;
+          const height = window.innerHeight;
+      
+          if (this.width !== width || this.height !== height) {
+            this.width = this.canvas.width = width;
+            this.height = this.canvas.height = height;
+            this.halfWidth = width / 2;
+            this.halfHeight = height / 2;
+            this.updateTargetRect(); // Update target position on resize
+          }
+        }
+      
+        initParticles() {
+          this.particles = new Array(this.numParticles);
+          const random = Math.random;
+          const sin = Math.sin;
+          const cos = Math.cos;
+          const acos = Math.acos;
+          const pow = Math.pow;
+          const PI = Math.PI;
+          const TWO_PI = this.TWO_PI;
+          const floor = Math.floor;
+      
+          for (let i = 0; i < this.numParticles; i++) {
+            const latentVector = new Array(this.dimensions);
+            for (let j = 0; j < this.dimensions; j++) {
+              latentVector[j] = random() * 2 - 1;
+            }
+            const theta = random() * TWO_PI;
+            const phi = acos(2 * random() - 1);
+            const r = pow(random(), 1/3) * 500; // Initial spread radius
+            this.particles[i] = {
+              latentVector,
+              position: {
+                x: r * sin(phi) * cos(theta),
+                y: r * sin(phi) * sin(theta),
+                z: r * cos(phi)
+              },
+              velocity: {
+                x: (random() - 0.5) * this.maxSpeed,
+                y: (random() - 0.5) * this.maxSpeed,
+                z: (random() - 0.5) * this.maxSpeed
+              },
+              targetPosition: { x: 0, y: 0, z: 0 },
+              size: 1 + random() * 2,
+              opacity: 0,
+              hue: floor(random() * 360),
+              seed: random() * 1000,
+              energyLevel: random()
+            };
+          }
+        }
+      
+        // --- MODIFIED: Calculate positions based on phase ---
+        calculateParticlePositions(progress, elapsed) {
+            if (this.streamPhase) {
+                this.calculateStreamPositions(elapsed);
+            } else {
+                this.calculateMorphPositions(progress);
+            }
+        }
+      
+        // --- NEW: Calculate positions for the stream phase ---
+        calculateStreamPositions(elapsed) {
+            if (!this.targetRect) {
+                this.updateTargetRect(); // Try to get rect if missing
+                if (!this.targetRect) return; // Skip if still no target
+            }
+      
+            const streamProgress = Math.min((elapsed - this.streamStartTime) / this.streamDuration, 1);
+            const random = Math.random;
+      
+            for (let i = 0; i < this.particles.length; i++) {
+                const particle = this.particles[i];
+                const targetPosition = particle.targetPosition;
+      
+                // Calculate a random point within the target element's bounding box
+                // Convert viewport coordinates (targetRect) to canvas 3D coordinates (relative to center)
+                const targetX_viewport = this.targetRect.left + random() * this.targetRect.width;
+                const targetY_viewport = this.targetRect.top + random() * this.targetRect.height;
+      
+                // Convert viewport coords to world coords relative to canvas center
+                targetPosition.x = targetX_viewport - this.halfWidth;
+                targetPosition.y = targetY_viewport - this.halfHeight;
+      
+                // Bring particles towards the Z=0 plane (screen plane) as they approach
+                // Use easing function for smoother arrival at Z=0
+                const easeOutQuart = t => 1 - (--t) * t * t * t;
+                const zProgress = easeOutQuart(streamProgress);
+                targetPosition.z = particle.position.z * (1 - zProgress * 0.98); // Move towards z=0, almost fully
+      
+                // Optional: Add slight depth variation if desired, fading out near end
+                // targetPosition.z += (random() - 0.5) * 10 * (1 - streamProgress);
+            }
+        }
+        // --- END NEW ---
+      
+      
+        // --- RENAMED: Original logic for morphing shapes ---
+        calculateMorphPositions(progress) {
+          // Calculate current phase and progress within phase
+          let phaseStartTime = 0;
+          let currentPhaseProgress = 0;
+          let phase = null;
+          const animationTime = progress * this.animationLength;
+      
+          for (let i = 0; i < this.phases.length; i++) {
+            phase = this.phases[i];
+            const phaseDuration = phase.duration * this.animationLength;
+            if (animationTime < phaseStartTime + phaseDuration || i === this.phases.length - 1) { // Handle last phase
+              this.currentPhase = i;
+              currentPhaseProgress = Math.min(1, (animationTime - phaseStartTime) / phaseDuration); // Clamp progress
+              break;
+            }
+            phaseStartTime += phaseDuration;
+          }
+      
+          // Detect specific phase transitions for timing
+          if (this.currentPhase === 3 && currentPhaseProgress > 0.85 && currentPhaseProgress < 0.95) {
+            this.cubeHangTime = 300;
+          }
+          if (this.currentPhase === 4 && currentPhaseProgress > 0.9 && this.cubeHangTime <= 0) {
+            this.cubeHangTime = 3000;
+          }
+      
+          // Update structure weights based on current phase
+          if (phase) {
+            // Optimization: Cache 1-currentPhaseProgress
+            const invProgress = 1 - currentPhaseProgress;
+      
+            phase.transitions.forEach(transition => {
+              // Ensure weights don't overshoot (can happen with floating point)
+              const currentWeight = this.structures[transition.index].weight;
+              this.structures[transition.index].weight = Math.max(0, Math.min(1,
+                currentWeight * invProgress + transition.target * currentPhaseProgress
+              ));
+            });
+          }
+      
+          // Optimization: Process particles in batches for better cache locality
+          const batchSize = 200;
+          const numBatches = Math.ceil(this.particles.length / batchSize);
+      
+          // Cache Math functions
+          const sin = Math.sin;
+          const cos = Math.cos;
+          const floor = Math.floor;
+          const PI = Math.PI;
+          const TWO_PI = this.TWO_PI;
+      
+          // Reuse position object to avoid allocations
+          const pos = this._pos;
+      
+          for (let batch = 0; batch < numBatches; batch++) {
+            const batchStart = batch * batchSize;
+            const batchEnd = Math.min(batchStart + batchSize, this.particles.length);
+      
+            for (let i = batchStart; i < batchEnd; i++) {
+              const particle = this.particles[i];
+              const targetPosition = particle.targetPosition;
+      
+              // Reset target position
+              targetPosition.x = 0;
+              targetPosition.y = 0;
+              targetPosition.z = 0;
+      
+              // Apply each active structure
+              let totalWeight = 0; // Keep track for normalization if needed (optional)
+              for (let s = 0; s < this.structures.length; s++) {
+                const structure = this.structures[s];
+                if (structure.weight <= 1e-4) continue; // Skip negligible weights
+      
+                // Reset position for this structure calculation
+                pos.x = 0;
+                pos.y = 0;
+                pos.z = 0;
+      
+                const lv = particle.latentVector;
+                const weight = structure.weight;
+      
+                switch (structure.type) {
+                  case 'sphere': {
+                    const theta = lv[0] * PI; const phi = lv[1] * TWO_PI;
+                    const sinTheta = sin(theta); const radius = structure.radius;
+                    pos.x = radius * sinTheta * cos(phi);
+                    pos.y = radius * sinTheta * sin(phi);
+                    pos.z = radius * cos(theta);
+                    break;
+                  }
+                  case 'torus': {
+                    const u = lv[2] * TWO_PI; const v = lv[3] * TWO_PI;
+                    const cosV = cos(v); const radius = structure.radius;
+                    const tubeRadius = structure.tubeRadius; const r = radius + tubeRadius * cosV;
+                    pos.x = r * cos(u);
+                    pos.y = r * sin(u);
+                    pos.z = tubeRadius * sin(v);
+                    break;
+                  }
+                  case 'spiral': {
+                    const t = (lv[4] + 1) * 0.5 * structure.turns * TWO_PI;
+                    const h = (lv[5] + 1) * 0.5; // Normalized height 0-1
+                    const heightPos = h * structure.height;
+                    const radiusScale = 1 - h * 0.7; // Radius shrinks towards top
+                    const radius = structure.radius;
+                    pos.x = radius * cos(t) * radiusScale;
+                    pos.y = heightPos - structure.height / 2; // Center vertically
+                    pos.z = radius * sin(t) * radiusScale;
+                    break;
+                  }
+                  case 'grid': {
+                    const levels = structure.levels; const size = structure.size;
+                    const halfSize = size / 2;
+                    // Map latent vector to grid coordinates smoothly then snap
+                    pos.x = floor((lv[0] * 0.5 + 0.5) * levels) / (levels -1) * size - halfSize;
+                    pos.y = floor((lv[1] * 0.5 + 0.5) * levels) / (levels -1) * size - halfSize;
+                    pos.z = floor((lv[2] * 0.5 + 0.5) * levels) / (levels -1) * size - halfSize;
+                    break;
+                  }
+                  case 'solidCube': {
+                    const cubeSize = this.shrinkPhase ? structure.size : structure.size; // Use current size
+                    const halfCubeSize = cubeSize / 2;
+                    pos.x = lv[0] * halfCubeSize;
+                    pos.y = lv[1] * halfCubeSize;
+                    pos.z = lv[2] * halfCubeSize;
+                    break;
+                  }
+                }
+      
+                // Apply weighted position
+                targetPosition.x += pos.x * weight;
+                targetPosition.y += pos.y * weight;
+                targetPosition.z += pos.z * weight;
+                totalWeight += weight;
+              }
+      
+              // Optional: Normalize if total weight deviates significantly from 1
+              // if (totalWeight > 1e-4 && Math.abs(totalWeight - 1.0) > 1e-4) {
+              //   targetPosition.x /= totalWeight;
+              //   targetPosition.y /= totalWeight;
+              //   targetPosition.z /= totalWeight;
+              // }
+      
+              // Add noise based on progress (reducing over time)
+              const noiseAmount = Math.max(0, 1 - progress * 0.8); // Noise diminishes
+              const noiseScale = 15 * noiseAmount; // Reduced noise scale
+              const seed = particle.seed;
+              const energy = particle.energyLevel;
+              const timeFactor = progress * 5;
+      
+              targetPosition.x += sin(timeFactor + seed * 10) * noiseScale * energy;
+              targetPosition.y += cos(timeFactor * 1.2 + seed * 20) * noiseScale * energy;
+              targetPosition.z += sin(timeFactor * 1.5 + seed * 30) * noiseScale * energy;
+            }
+          }
+        }
+        // --- END RENAMED ---
+      
+        // --- MODIFIED: Update particles based on phase ---
+        updateParticles(deltaTime, progress, elapsed) {
+          let springFactor = 0.01;
+          let dampingFactor = 0.88;
+          let timeScale = deltaTime * 0.06;
+          let sizeMultiplier = 1;
+          let opacityMultiplier = 1;
+      
+          // --- Handle Stream Phase Physics ---
+          if (this.streamPhase) {
+              const streamProgress = Math.min((elapsed - this.streamStartTime) / this.streamDuration, 1);
+              const easeInOutCubic = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+              const easedProgress = easeInOutCubic(streamProgress);
+      
+              springFactor = 0.04 + easedProgress * 0.1; // Stronger pull towards target, easing in/out
+              dampingFactor = 0.82; // Lower damping for quicker movement
+              timeScale = deltaTime * 0.07; // Slightly faster movement
+      
+              // Shrink particles significantly as they reach the target
+              sizeMultiplier = Math.max(0.05, 1 - easedProgress * 0.95);
+              // Fade particles out as they arrive
+              opacityMultiplier = Math.max(0.1, 1 - easedProgress * 0.9);
+      
+              // Stop camera rotation during stream
+              this.camera.rotation.x = 0;
+              this.camera.rotation.y = 0;
+              this.camera.rotation.z = 0;
+      
+          } else {
+          // --- Original Physics / Shrink Phase Logic ---
+              // Handle hang time delay
+              if (this.cubeHangTime > 0) {
+                this.cubeHangTime -= deltaTime;
+                if (this.cubeHangTime < 0) this.cubeHangTime = 0;
+                // Slow down physics during hang time, especially for the cube
+                if (this.currentPhase === 4 && this.structures[4].weight > 0.9) { deltaTime *= 0.05; }
+                else { deltaTime *= 0.1; } // General slowdown during hang
+              }
+      
+              const speedFactor = 1 + progress * 2;
+              springFactor = 0.01 * speedFactor;
+              dampingFactor = 0.88;
+              timeScale = deltaTime * 0.06;
+      
+              // Update camera rotation (only if not streaming)
+              if (this.currentPhase === 4 && this.structures[4].weight > 0.9 && !this.shrinkPhase) {
+                  // Final solid cube phase rotation (before shrink)
+                  this.camera.rotation.y += 0.005 * deltaTime * 0.06 * 5; // Slower spin
+                  this.camera.rotation.x = Math.sin(progress * Math.PI) * 0.05; // Less tilt
+              } else if (!this.shrinkPhase) {
+                  // Normal camera rotation during morphing
+                  this.camera.rotation.y = Math.sin(progress * Math.PI * 3) * 0.15; // Reduced rotation
+                  this.camera.rotation.x = Math.sin(progress * Math.PI * 2) * 0.1; // Reduced rotation
+              }
+              // Add rotation during shrink phase
+              if (this.shrinkPhase) {
+                  this.camera.rotation.y += 0.01 * deltaTime * 0.06 * 5; // Moderate spin during shrink
+              }
+          }
+      
+          // Update particles in a single pass
+          for (let i = 0; i < this.particles.length; i++) {
+            const particle = this.particles[i];
+            const position = particle.position;
+            const targetPosition = particle.targetPosition;
+            const velocity = particle.velocity;
+      
+            const dx = targetPosition.x - position.x;
+            const dy = targetPosition.y - position.y;
+            const dz = targetPosition.z - position.z;
+      
+            // Apply force
+            velocity.x += dx * springFactor;
+            velocity.y += dy * springFactor;
+            velocity.z += dz * springFactor;
+      
+            // Apply damping
+            velocity.x *= dampingFactor;
+            velocity.y *= dampingFactor;
+            velocity.z *= dampingFactor;
+      
+            // Update position
+            position.x += velocity.x * timeScale;
+            position.y += velocity.y * timeScale;
+            position.z += velocity.z * timeScale;
+      
+            // Update visual properties
+            if (this.streamPhase) {
+                particle.opacity = opacityMultiplier * (0.5 + particle.energyLevel * 0.5); // Use calculated opacity, base on energy
+                particle.size = (0.5 + particle.energyLevel * 1.0) * sizeMultiplier; // Use calculated size, base on energy
+            } else {
+                // Fade in opacity based on overall progress
+                particle.opacity = Math.min(1, progress * 4); // Faster fade in
+                // Size variation based on progress and energy
+                particle.size = (1.5 + particle.energyLevel * 1.5) * Math.max(0.5, (1 - progress * 0.5)); // Base size larger, shrinks less over time
+            }
+             // Clamp opacity
+             particle.opacity = Math.max(0, Math.min(1, particle.opacity));
+          }
+      
+          // Pre-calculate sin/cos values for camera rotation (always needed for projection)
+          const rx = this.camera.rotation.x; const ry = this.camera.rotation.y; const rz = this.camera.rotation.z;
+          this.camera.sin.x = Math.sin(rx); this.camera.sin.y = Math.sin(ry); this.camera.sin.z = Math.sin(rz);
+          this.camera.cos.x = Math.cos(rx); this.camera.cos.y = Math.cos(ry); this.camera.cos.z = Math.cos(rz);
+        }
+        // --- END MODIFIED ---
+      
+        project(point, result) {
+          // Use pre-calculated sin/cos values
+          const sinX = this.camera.sin.x; const sinY = this.camera.sin.y; const sinZ = this.camera.sin.z;
+          const cosX = this.camera.cos.x; const cosY = this.camera.cos.y; const cosZ = this.camera.cos.z;
+      
+          let x = point.x; let y = point.y; let z = point.z;
+      
+          // Apply rotations (order YXZ typical for cameras)
+          // Y rotation
+          const x1 = x * cosY + z * sinY;
+          const z1 = -x * sinY + z * cosY;
+          x = x1; z = z1;
+          // X rotation
+          const y2 = y * cosX - z * sinX;
+          const z2 = y * sinX + z * cosX;
+          y = y2; z = z2;
+          // Z rotation (less common for camera, but included)
+          const x3 = x * cosZ - y * sinZ;
+          const y3 = x * sinZ + y * cosZ;
+          x = x3; y = y3;
+      
+      
+          // Project to 2D with perspective
+          const cameraZ = this.camera.position.z;
+          // Avoid division by zero or near-zero (points behind camera or too close)
+          const depth = cameraZ - z;
+          if (depth < 1) { // Point is behind or too close, project far away or handle differently
+              result.x = -9999;
+              result.y = -9999;
+              result.scale = 0;
+              return result;
+          }
+          const scale = cameraZ / depth;
+      
+          // Set result directly without creating new object
+          result.x = x * scale + this.halfWidth;
+          result.y = y * scale + this.halfHeight;
+          result.scale = scale;
+      
+          return result;
+        }
+      
+        // --- MODIFIED: Render loop with new phase logic ---
+        render(timestamp) {
+          if (!this.isRunning) return; // Exit if stopped
+      
+          if (!this.startTime) this.startTime = timestamp;
+          const elapsed = timestamp - this.startTime;
+          // Progress calculation needs to be handled carefully across phases
+          const morphProgress = Math.min(elapsed / this.animationLength, 1);
+          const deltaTime = Math.min(50, elapsed - (this.lastTime || elapsed)); // Cap deltaTime to prevent jumps
+          this.lastTime = elapsed;
+      
+          // Clear canvas
+          this.ctx.fillStyle = 'black';
+          this.ctx.fillRect(0, 0, this.width, this.height);
+      
+          // Calculate particle positions (handles morphing or streaming)
+          this.calculateParticlePositions(morphProgress, elapsed);
+          // Update particles (handles different physics/visuals per phase)
+          this.updateParticles(deltaTime, morphProgress, elapsed);
+      
+          const particles = this.particles;
+          if (!particles) return; // Exit if particles cleaned up
+      
+          const halfWidth = this.halfWidth;
+          const halfHeight = this.halfHeight;
+          const useBatch = morphProgress > 0.4 || this.streamPhase; // Use batch rendering also for stream phase
+      
+          const colorTransitionStart = 0.35;
+          const colorTransitionEnd = 0.6;
+          const colorProgress = Math.max(0, Math.min(1, (morphProgress - colorTransitionStart) / (colorTransitionEnd - colorTransitionStart)));
+          const projected = this._projected; // Reuse projection result object
+      
+          // --- Rendering Logic ---
+          if (useBatch) {
+            const zSortedIndices = this.zSortedIndices;
+            let visibleCount = 0;
+            // Collect indices of visible particles
+            for (let i = 0; i < particles.length; i++) {
+              // Basic visibility check (opacity and rough Z check)
+              if (particles[i].opacity > 0.01 && particles[i].position.z < this.camera.position.z) {
+                zSortedIndices[visibleCount++] = i;
+              }
+            }
+      
+            // Only sort if we have visible particles
+            if (visibleCount > 0) {
+              // Create a temporary array slice for sorting to avoid modifying original indices array directly during sort
+              const indicesToSort = zSortedIndices.slice(0, visibleCount);
+      
+              // Custom sort function accessing particles array directly
+              indicesToSort.sort((aIndex, bIndex) => particles[bIndex].position.z - particles[aIndex].position.z);
+      
+              // Render particles in z-sorted order using the sorted indices
+              for (let idx = 0; idx < visibleCount; idx++) {
+                const i = indicesToSort[idx]; // Get index from the sorted temporary array
+                const particle = particles[i];
+      
+                // Project particle (reuse object)
+                this.project(particle.position, projected);
+      
+                // Skip particles projected way off-screen
+                const margin = 100; // Viewport margin
+                if (projected.x < -margin || projected.x > this.width + margin ||
+                    projected.y < -margin || projected.y > this.height + margin ||
+                    projected.scale <= 0) { // Also skip if scale is invalid
+                  continue;
+                }
+      
+                const size = Math.max(0.5, particle.size * projected.scale); // Ensure min size 0.5
+                const opacity = particle.opacity;
+      
+                let color;
+                // Color Logic: Force white/grey during stream
+                if (this.streamPhase) {
+                    const grey = Math.floor(200 + particle.energyLevel * 55); // Brighter based on energy
+                    color = `rgba(${grey}, ${grey}, ${grey}, ${opacity * 0.85})`;
+                } else if (colorProgress > 0) {
+                    const hue = (particle.hue + this.currentPhase * 30) % 360;
+                    const sat = 30 + 40 * colorProgress; // Less saturated initially
+                    const lightness = Math.max(40, 75 - Math.abs(particle.position.z) / 15); // Adjust lightness based on depth
+                    color = `hsla(${hue}, ${sat}%, ${lightness}%, ${opacity * 0.8})`;
+                } else {
+                    // Early phase: white
+                    color = `rgba(255, 255, 255, ${opacity * 0.75})`;
+                }
+      
+                // Draw particle
+                this.ctx.fillStyle = color;
+                this.ctx.beginPath();
+                this.ctx.arc(projected.x, projected.y, size, 0, this.TWO_PI);
+                this.ctx.fill();
+              }
+            }
+          } else { // Simpler rendering for early phases (no z-sort)
+            for (let i = 0; i < particles.length; i++) {
+              const particle = particles[i];
+              if (particle.opacity <= 0.01) continue;
+      
+              this.project(particle.position, projected);
+      
+              const margin = 100;
+              if (projected.x < -margin || projected.x > this.width + margin ||
+                  projected.y < -margin || projected.y > this.height + margin ||
+                  projected.scale <= 0) {
+                continue;
+              }
+      
+              const size = Math.max(0.5, particle.size * projected.scale);
+              const opacity = particle.opacity;
+              const color = `rgba(255, 255, 255, ${opacity * 0.75})`;
+      
+              this.ctx.fillStyle = color;
+              this.ctx.beginPath();
+              this.ctx.arc(projected.x, projected.y, size, 0, this.TWO_PI);
+              this.ctx.fill();
+            }
+          }
+          // --- END Rendering Logic ---
+      
+      
+          // --- Connection lines (disable during stream and shrink) ---
+          if (!this.streamPhase && !this.shrinkPhase && this.currentPhase === 3 && this.structures[3].weight > 0.9) {
+              const baseOpacity = this.cubeHangTime > 0 ? 0.5 : 0.4; // Dimmer lines
+              const maxDistance = 70; // Connect slightly further points
+              const maxConnections = Math.min(this.numParticles, 300); // Check fewer particles
+              const gridPoints = this.gridPoints; // Reuse pre-allocated array
+      
+              // Collect projected points for visible particles
+              let gridPointCount = 0;
+              for (let i = 0; i < maxConnections; i++) {
+                  const p1 = this.particles[i];
+                  // Check opacity and if point is roughly in view (using Z)
+                  if (p1.opacity > 0.1 && p1.position.z < this.camera.position.z * 0.9) {
+                      this.project(p1.position, projected);
+                      // Check projected coords
+                      if (projected.x > 0 && projected.x < this.width && projected.y > 0 && projected.y < this.height) {
+                           if (gridPointCount < gridPoints.length) { // Check bounds
+                              const point = gridPoints[gridPointCount++];
+                              point.index = i; // Store original index if needed
+                              point.x = projected.x;
+                              point.y = projected.y;
+                          } else {
+                              break; // Stop if gridPoints array is full
+                          }
+                      }
+                  }
+              }
+      
+              // Draw lines between close points
+              let drawnLines = 0;
+              const maxLines = 500; // Limit number of lines drawn for performance
+              this.ctx.lineWidth = 0.5; // Thinner lines
+      
+              for (let i = 0; i < gridPointCount; i++) {
+                  const p1 = gridPoints[i];
+                  for (let j = i + 1; j < gridPointCount; j++) {
+                      const p2 = gridPoints[j];
+      
+                      // Fast distance check (squared)
+                      const dx = p1.x - p2.x;
+                      const dy = p1.y - p2.y;
+                      const distSq = dx * dx + dy * dy;
+      
+                      if (distSq < maxDistance * maxDistance) {
+                          // More accurate distance only when needed (optional, can skip sqrt)
+                          // const dist = Math.sqrt(distSq);
+                          // Vary line opacity based on distance
+                          const lineOpacity = baseOpacity * (1 - Math.sqrt(distSq) / maxDistance);
+                          if (lineOpacity > 0.05) { // Only draw if opacity is significant
+                              this.ctx.strokeStyle = `rgba(200, 200, 200, ${lineOpacity})`; // Lighter grey lines
+                              this.ctx.beginPath();
+                              this.ctx.moveTo(p1.x, p1.y);
+                              this.ctx.lineTo(p2.x, p2.y);
+                              this.ctx.stroke();
+      
+                              if (++drawnLines >= maxLines) break; // Limit total lines drawn
+                          }
+                      }
+                  }
+                  if (drawnLines >= maxLines) break;
+              }
+          }
+          // --- END Connection lines ---
+      
+      
+          // --- MODIFIED: Animation End Logic ---
+          const spinningCubeDuration = 3000;
+      
+          // Check if morphing animation is complete (progress >= 1) and cube hang time is over
+          if (morphProgress >= 1 && !this.shrinkPhase && !this.streamPhase && this.currentPhase === 4 &&
+              elapsed - this.animationLength >= spinningCubeDuration) {
+            this.shrinkPhase = true;
+            this.shrinkStartTime = elapsed;
+          }
+      
+          // Handle shrink phase
+          if (this.shrinkPhase && !this.streamPhase) {
+            const shrinkProgress = Math.min((elapsed - this.shrinkStartTime) / this.shrinkDuration, 1);
+            // Apply easing to shrink
+            const easeOutCubic = t => (--t) * t * t + 1;
+            const easedShrinkProgress = easeOutCubic(shrinkProgress);
+            this.structures[4].size = 80 * (1 - easedShrinkProgress) + this.finalCubeSize * easedShrinkProgress;
+      
+            // Check if shrink is complete, then start stream phase
+            if (shrinkProgress >= 1) {
+                this.shrinkPhase = false; // End shrink phase
+                this.streamPhase = true;  // Start stream phase
+                this.streamStartTime = elapsed;
+                this.updateTargetRect(); // Ensure target rect is updated right before streaming starts
+            }
+          }
+      
+          // Handle stream phase completion
+          if (this.streamPhase) {
+              const streamProgress = Math.min((elapsed - this.streamStartTime) / this.streamDuration, 1);
+              if (streamProgress >= 1) {
+                  // Stream is complete, stop rendering and call the final callback
+                  this.isRunning = false;
+                  // Don't cancel frame here, let it run one last time maybe? Or cancel now.
+                  if (this.frameID) {
+                      cancelAnimationFrame(this.frameID);
+                      this.frameID = null;
+                  }
+                  if (this.onComplete) {
+                      // Use requestAnimationFrame for the final callback to ensure smooth transition start
+                      requestAnimationFrame(this.onComplete);
+                  }
+                  return; // Exit render loop
+              }
+          }
+      
+          // Continue animation if running and not yet completed the final stream phase
+          if (this.isRunning) {
+              this.frameID = requestAnimationFrame(this.render);
+          } else {
+              // If isRunning became false unexpectedly, ensure frame is cancelled
+              if (this.frameID) {
+                  cancelAnimationFrame(this.frameID);
+                  this.frameID = null;
+              }
+          }
+          // --- END MODIFIED ---
+        } // End render method
+      
+        start() {
+          if (!this.isRunning) {
+            console.log("Starting Entrance Animation");
+            this.isRunning = true;
+            this.startTime = null; // Reset start time
+            this.lastTime = null; // Reset last time
+            this.shrinkPhase = false; // Reset phases
+            this.streamPhase = false; // Reset phases
+            this.currentPhase = 0; // Reset phases
+            // Reset structure weights if needed (might already be reset by logic)
+            this.structures.forEach((s, index) => {
+                s.weight = (index === 0) ? 0 : 0; // Start with sphere weight 0 or 1? Let calc handle.
+                if (s.type === 'solidCube') s.size = 80; // Reset cube size
+            });
+      
+            // Ensure target rect is calculated before first render if possible
+            this.updateTargetRect();
+            if (!this.targetRect) {
+                console.warn("Target rect not available at start, may cause issues if stream phase starts immediately.");
+            }
+      
+            this.frameID = requestAnimationFrame(this.render);
+          }
+        }
+      
+        stop() {
+          console.log("Stopping Entrance Animation");
+          this.isRunning = false;
+          if (this.frameID) {
+            cancelAnimationFrame(this.frameID);
+            this.frameID = null;
+          }
+        }
+      
+        cleanup() {
+          console.log("Cleaning up Entrance Animation resources");
+          window.removeEventListener('resize', this.resize);
+          this.stop(); // Ensure animation loop is stopped
+      
+          // Explicitly nullify large objects to help GC
+          this.particles = null;
+          this.zSortedIndices = null;
+          this.gridPoints = null;
+          this.structures = null;
+          this.phases = null;
+          this.targetElement = null; // Clear element reference
+          this.targetRect = null;
+          this.ctx = null; // Release context if possible (though usually not necessary)
+          this.canvas = null; // Release canvas reference
+          this.onComplete = null; // Release callback reference
+      
+          console.log("EntranceAnimation cleanup complete.");
+        }
+      } // End EntranceAnimation Class
+      </script>
 </head>
 <body>
     <header>
