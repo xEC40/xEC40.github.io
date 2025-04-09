@@ -1,122 +1,296 @@
+
+.fade-in-target {
+
+    opacity: 0;
+
+    /* Prevent interaction while invisible */
+
+    pointer-events: none;
+
+}
+
+.fade-in-visible {
+
+    opacity: 1;
+
+    pointer-events: auto; /* Allow interaction once visible */
+
+}
+
+
+
+
+#logoCanvas.fade-transition-fast {
+
+    transition: opacity 0.5s ease-out; /* Quick fade-out easing */
+
+}
+
+
+/* Transition for the main content and header links (slower fade) */
+
+#content.fade-transition-medium,
+
+nav ul.fade-transition-medium {
+
+    transition: opacity 1.2s ease-in-out; /* Smoother, slightly longer fade */
+
+}
+
+
+/* --- Existing CSS (Keep these as they are essential) --- */
+
+#content {
+
+    /* display: none; */ /* We will control visibility via opacity and display property in JS now */
+
+    /* Add other content styling */
+
+}
+
+
+/* Keep the rest of your existing CSS rules */
+
 body{
+
     background-color: #000000;
+
     padding:1rem;
+
     margin:auto;
+
     max-width:46rem;
+
     font-family:pt serif,Georgia,Cambria,times new roman,Times,serif;
+
     line-height:1.5;
+
     font-size:20px;
-    color:rgba(0,0,0,.87);
+
+    color:rgba(0,0,0,.87); /* Note: This is likely overridden elsewhere */
+
     -webkit-font-smoothing:antialiased;
+
     font-weight:300
+
 }
+
 nav{
+
     display:flex;
+
     justify-content:space-between;
+
     align-items:center;
+
     margin:1em 0 3em
+
 }
+
 nav ul,nav li{
+
     display:inline-block;
+
     list-style:none;
+
     margin:0 0 0 .5rem;
+
     padding:0
+
 }
+
 nav ul{
+
     margin-right:1rem
+
 }
+
 .logo{
+
     background-color:#1aff39;
+
     color:rgb(0, 0, 0);
+
     min-width:48px;
+
     min-height:48px;
+
     font-size:28px;
+
     border-radius:2px;
+
     display:flex;
+
     justify-content:center;
+
     align-items:center
+
 }
+
 .logo:hover{
+
     color:#fff
+
 }
+
 h1,h2{
+
     line-height:1.2;
+
     font-family:roboto,system-ui,segoe ui,Helvetica,Arial,sans-serif;
+
     font-weight:400;
+
     text-transform:uppercase;
+
     margin:1.34em 0 0
+
 }
+
 h1{
+
     color: white;
+
     font-size:1.95em
+
 }
+
 h2{
+
     color: #FF0000;
+
     font-size:1.45em;
+
     border-bottom:3px solid #FF0000
+
 }
+
 h1 a{
+
     color:#ff0000;
+
 }
+
 p{
+
     color: white;
+
     margin:.67em 0 1em
+
 }
+
 a{
+
     color:#1aff39;
+
     text-decoration:none;
+
     word-break:break-word
+
 }
+
 a:hover{
+
     color:#93269c
+
 }
+
 ul,ol{
+
     list-style-position:outside;
+
     margin-left:1em
+
 }
+
 img{
+
     display:block;
+
     margin-left:auto;
+
     margin-right:auto;
+
     max-width:100%
+
 }
+
 pre,code{
+
     font-family:roboto mono,SFMono-Regular,Consolas,liberation mono,Menlo,monospace;
+
     font-weight:400;
+
     font-size:18px;
+
     color:rgba(0,0,0,.6);
+
     background:#eee
+
 }
+
 code{
+
     padding:.2rem .4rem;
+
     font-size:14px;
+
     border-radius:2px
+
 }
+
 pre{
+
     overflow-y:auto;
+
     line-height:20px;
+
     border-radius:2px;
+
     padding:1em
+
 }
+
 pre code{
+
     font-size:14px;
+
     padding:0;
+
     color:rgba(0,0,0,.87)
+
 }
+
 footer{
+
     font-size:12px
+
 }
+
 .hl{
+
     display:block;
+
     width:100%;
+
     background-color:#ffc
+
 }
+
 .ow,.gh,.gp,.gs,.gu,.nt,.nn,.ne,.ni,.nc,.kr,.kn,.kd,.kc,.k{
+
     font-weight:700
+
 }
+
 .c,.ch,.cm,.c1,.cs,.ge{
+
     color:#777
+
 }
+
 sub {
+
     font-size: .7em;
+
 }
