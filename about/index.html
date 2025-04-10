@@ -214,324 +214,271 @@
         })();
     </script>
     <script>
-        (function() {
-            // --- Configuration ---
-            const phrases = [
-                "bits and bytes fanboy",
-                "pee + poopoo",
-                "powered by curiosity",
-                "latent space observer",
-                "low latency computing",
-                "creative code conjurer",
-                "building digital dreams",
-            ];
-            const switchInterval = 4000; // Time per phrase (ms) - increased for longer anim
-            const easeDuration = 2500; // Animation duration (ms) - needs to be longer
-        
-            // Particle appearance & physics
-            const particleBaseSize = 1.85;
-            const particleColor = "#1aff39"; // Your green link color
-            const sampleGap = 4;         // Spacing for sampling text pixels
-            const damping = 0.92;        // Slows particles down (0.9-0.98 are good)
-            const orbitalStrengthBase = 0.8; // How strongly particles initially orbit
-            const attractionStrengthBase = 0.03; // How strongly particles pull towards target
-            const initialOrbitRadiusFactor = 1.5; // How far out new particles start (relative to canvas size)
-            const fontStyle = "bold 36px Reddit Mono"; // Adjusted font size for better wrapping
-        
-            // --- Setup ---
-            const container = document.getElementById('sayingz');
-            if (!container) {
-                console.error("Particle text script error: Container element '#sayingz' not found.");
+    (function() {
+        const phrases = [
+            "bits and bytes fanboy",
+            "pee + poopoo",
+            "powered by curiosity",
+            "latent space observer",
+            "low latency computing",
+            "creative code conjurer",
+            "building digital dreams",
+        ];
+        const switchInterval = 4000;
+        const easeDuration = 2500;
+    
+        const particleBaseSize = 1.85;
+        const particleColor = "#1aff39";
+        const sampleGap = 4;
+        const damping = 0.92;
+        const orbitalStrengthBase = 0.8;
+        const attractionStrengthBase = 0.03;
+        const initialOrbitRadiusFactor = 1.5;
+        const fontStyle = "bold 36px Reddit Mono";
+    
+        const container = document.getElementById('sayingz');
+        if (!container) return;
+    
+        const canvas = document.createElement('canvas');
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.position = 'absolute';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.pointerEvents = 'none';
+        container.style.position = 'relative';
+        container.prepend(canvas);
+    
+        const ctx = canvas.getContext('2d');
+        let cw, ch, centerW, centerH;
+    
+        const offCanvas = document.createElement('canvas');
+        const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+    
+        let particles = [];
+        let animStartTime = null;
+        let currentPhraseIndex = 0;
+        let animating = false;
+        let animationFrameId = null;
+    
+        function easeInOutCubic(t) {
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
+    
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            cw = container.clientWidth;
+            ch = container.clientHeight;
+            canvas.width = cw * dpr;
+            canvas.height = ch * dpr;
+            ctx.scale(dpr, dpr);
+            centerW = cw / 2;
+            centerH = ch / 2;
+            if (!animating) {
+                renderCurrentStaticParticles();
+            }
+        }
+    
+        function wrapTextAndGetParticles(text) {
+            const fontSize = parseInt(fontStyle.match(/(\d+)px/)[1], 10);
+            const lineHeight = fontSize * 1.2;
+    
+            offCanvas.width = cw;
+            offCanvas.height = ch;
+            offCtx.clearRect(0, 0, cw, ch);
+            offCtx.font = fontStyle;
+            offCtx.textAlign = "center";
+            offCtx.textBaseline = "middle";
+            offCtx.fillStyle = "white";
+    
+            const words = text.split(' ');
+            let line = '';
+            let lines = [];
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line + words[n] + ' ';
+                const metrics = offCtx.measureText(testLine);
+                const testWidth = metrics.width;
+                if (testWidth > cw * 0.9 && n > 0) {
+                    lines.push(line.trim());
+                    line = words[n] + ' ';
+                } else {
+                    line = testLine;
+                }
+            }
+            lines.push(line.trim());
+    
+            const totalTextHeight = lines.length * lineHeight;
+            let currentY = centerH - totalTextHeight / 2 + lineHeight / 2;
+    
+            const newParticles = [];
+            for (const currentLine of lines) {
+                offCtx.fillText(currentLine, centerW, currentY);
+                currentY += lineHeight;
+            }
+    
+            const imageData = offCtx.getImageData(0, 0, cw, ch).data;
+            for (let y = 0; y < ch; y += sampleGap) {
+                for (let x = 0; x < cw; x += sampleGap) {
+                    const index = (y * cw + x) * 4;
+                    if (imageData[index + 3] > 128) {
+                        newParticles.push({
+                            tx: x, ty: y,
+                            x: 0, y: 0,
+                            vx: 0, vy: 0,
+                            color: particleColor
+                        });
+                    }
+                }
+            }
+            return newParticles;
+        }
+    
+        function morphToParticles(newTargetParticles) {
+            const targetCount = newTargetParticles.length;
+            const currentCount = particles.length;
+            const maxCount = Math.max(targetCount, currentCount);
+            const tempParticles = [];
+            const initialOrbitRadius = Math.min(cw, ch) * initialOrbitRadiusFactor / 2;
+    
+            for (let i = 0; i < maxCount; i++) {
+                let p, target;
+    
+                if (i < currentCount) {
+                    p = particles[i];
+                } else {
+                    const angle = Math.random() * Math.PI * 2;
+                    const startX = centerW + Math.cos(angle) * initialOrbitRadius;
+                    const startY = centerH + Math.sin(angle) * initialOrbitRadius;
+                    p = { x: startX, y: startY, vx: 0, vy: 0, color: particleColor };
+                }
+    
+                if (i < targetCount) {
+                    target = newTargetParticles[i];
+                    p.tx = target.tx;
+                    p.ty = target.ty;
+                } else {
+                    const angle = Math.random() * Math.PI * 2;
+                    p.tx = centerW + Math.cos(angle) * cw * 2;
+                    p.ty = centerH + Math.sin(angle) * ch * 2;
+                }
+    
+                if (i >= currentCount) {
+                    const angleToCenter = Math.atan2(p.y - centerH, p.x - centerW);
+                    const orbitalAngle = angleToCenter + Math.PI / 2;
+                    const speed = Math.random() * 2 + 1;
+                    p.vx = Math.cos(orbitalAngle) * speed;
+                    p.vy = Math.sin(orbitalAngle) * speed;
+                } else {
+                    p.vx = p.vx || 0;
+                    p.vy = p.vy || 0;
+                }
+    
+                tempParticles.push(p);
+            }
+    
+            particles = tempParticles;
+            animStartTime = performance.now();
+            animating = true;
+    
+            if (!animationFrameId) {
+                animationFrameId = requestAnimationFrame(animateParticles);
+            }
+        }
+    
+        function animateParticles(now) {
+            if (!animating) {
+                animationFrameId = null;
                 return;
             }
-        
-            const canvas = document.createElement('canvas');
-            canvas.style.width = '100%';
-            canvas.style.height = '100%';
-            canvas.style.position = 'absolute';
-            canvas.style.top = '0';
-            canvas.style.left = '0';
-            canvas.style.pointerEvents = 'none';
-            container.style.position = 'relative'; // Ensure container is positioned
-            container.prepend(canvas);
-        
-            const ctx = canvas.getContext('2d');
-            let cw, ch, centerW, centerH;
-        
-            function resizeCanvas() {
-                const dpr = window.devicePixelRatio || 1;
-                cw = container.clientWidth;
-                ch = container.clientHeight;
-                canvas.width = cw * dpr;
-                canvas.height = ch * dpr;
-                ctx.scale(dpr, dpr);
-                centerW = cw / 2;
-                centerH = ch / 2;
-                // Re-render current text if not animating
-                if (!animating) {
-                    renderCurrentStaticParticles();
+    
+            const elapsed = now - animStartTime;
+            const t = Math.min(1.0, elapsed / easeDuration);
+            const easeT = easeInOutCubic(t);
+    
+            ctx.clearRect(0, 0, cw, ch);
+    
+            for (let p of particles) {
+                const dx = p.tx - p.x;
+                const dy = p.ty - p.y;
+                const distToTarget = Math.sqrt(dx * dx + dy * dy);
+    
+                const attractionMag = easeT * attractionStrengthBase;
+                const ax = (dx / (distToTarget + 0.1)) * attractionMag * (distToTarget > 1 ? distToTarget : 1);
+                const ay = (dy / (distToTarget + 0.1)) * attractionMag * (distToTarget > 1 ? distToTarget : 1);
+    
+                const vecToCenter_x = p.x - centerW;
+                const vecToCenter_y = p.y - centerH;
+                const distToCenter = Math.sqrt(vecToCenter_x*vecToCenter_x + vecToCenter_y*vecToCenter_y);
+                const tangent_x = -vecToCenter_y / (distToCenter + 0.1);
+                const tangent_y = vecToCenter_x / (distToCenter + 0.1);
+    
+                const orbitalMag = (1 - easeT) * orbitalStrengthBase * (1 - Math.min(1, distToCenter / (initialOrbitRadiusFactor*100)));
+                const ox = tangent_x * orbitalMag;
+                const oy = tangent_y * orbitalMag;
+    
+                p.vx += ax + ox;
+                p.vy += ay + oy;
+    
+                p.vx *= damping;
+                p.vy *= damping;
+    
+                p.x += p.vx;
+                p.y += p.vy;
+    
+                const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+                const size = particleBaseSize + Math.min(2, speed * 0.1);
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.fillRect(p.x - size/2, p.y - size/2, size, size);
+                ctx.fill();
+            }
+    
+            if (t < 1) {
+                animationFrameId = requestAnimationFrame(animateParticles);
+            } else {
+                animating = false;
+                animationFrameId = null;
+                renderCurrentStaticParticles();
+            }
+        }
+    
+        function renderCurrentStaticParticles() {
+            ctx.clearRect(0, 0, cw, ch);
+            ctx.fillStyle = particleColor;
+            for (let p of particles) {
+                if (p.tx !== undefined && p.ty !== undefined) {
+                    const size = particleBaseSize;
+                    p.x = p.tx;
+                    p.y = p.ty;
+                    p.vx = 0;
+                    p.vy = 0;
+                    ctx.fillRect(p.x - size / 2, p.y - size / 2, size, size);
                 }
             }
-            window.addEventListener('resize', resizeCanvas);
+        }
+    
+        function nextPhrase() {
+            currentPhraseIndex = (currentPhraseIndex + 1) % phrases.length;
+            const newParticles = wrapTextAndGetParticles(phrases[currentPhraseIndex]);
+            morphToParticles(newParticles);
+        }
+    
+        window.addEventListener('resize', resizeCanvas);
         
-            // Offscreen canvas for text rendering and sampling
-            const offCanvas = document.createElement('canvas');
-            const offCtx = offCanvas.getContext('2d', { willReadFrequently: true }); // Hint for performance
-        
-            // --- State ---
-            let particles = [];
-            let animStartTime = null;
-            let currentPhraseIndex = 0;
-            let animating = false;
-            let animationFrameId = null;
-        
-            // --- Easing ---
-            function easeInOutCubic(t) {
-                return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-            }
-        
-            // --- Text Wrapping and Particle Generation ---
-            function wrapTextAndGetParticles(text) {
-                // Rough estimate for line height
-                const fontSize = parseInt(fontStyle.match(/(\d+)px/)[1], 10);
-                const lineHeight = fontSize * 1.2;
-        
-                offCanvas.width = cw; // Use scaled dimensions for drawing
-                offCanvas.height = ch;
-                offCtx.clearRect(0, 0, cw, ch);
-                offCtx.font = fontStyle;
-                offCtx.textAlign = "center";
-                offCtx.textBaseline = "middle";
-                offCtx.fillStyle = "white"; // Color doesn't matter for sampling alpha
-        
-                // Simple word wrapping
-                const words = text.split(' ');
-                let line = '';
-                let lines = [];
-                for (let n = 0; n < words.length; n++) {
-                    const testLine = line + words[n] + ' ';
-                    const metrics = offCtx.measureText(testLine);
-                    const testWidth = metrics.width;
-                    if (testWidth > cw * 0.9 && n > 0) { // Use 90% width for safety margin
-                        lines.push(line.trim());
-                        line = words[n] + ' ';
-                    } else {
-                        line = testLine;
-                    }
-                }
-                lines.push(line.trim());
-        
-                // Calculate starting Y position to center the block of text
-                const totalTextHeight = lines.length * lineHeight;
-                let currentY = centerH - totalTextHeight / 2 + lineHeight / 2;
-        
-                // Draw lines and sample
-                const newParticles = [];
-                for (const currentLine of lines) {
-                    offCtx.fillText(currentLine, centerW, currentY);
-                    currentY += lineHeight;
-                }
-        
-                // Sample the drawn text
-                const imageData = offCtx.getImageData(0, 0, cw, ch).data;
-                for (let y = 0; y < ch; y += sampleGap) {
-                    for (let x = 0; x < cw; x += sampleGap) {
-                        const index = (y * cw + x) * 4;
-                        if (imageData[index + 3] > 128) { // Check alpha channel
-                            newParticles.push({
-                                tx: x, ty: y, // Target position
-                                x: 0, y: 0,   // Current position (will be set in morph)
-                                vx: 0, vy: 0, // Velocity
-                                color: particleColor
-                            });
-                        }
-                    }
-                }
-                return newParticles;
-            }
-        
-            // --- Particle Morphing Logic ---
-            function morphToParticles(newTargetParticles) {
-                const targetCount = newTargetParticles.length;
-                const currentCount = particles.length;
-                const maxCount = Math.max(targetCount, currentCount);
-                const tempParticles = [];
-                const initialOrbitRadius = Math.min(cw, ch) * initialOrbitRadiusFactor / 2;
-        
-                for (let i = 0; i < maxCount; i++) {
-                    let p, target;
-        
-                    if (i < currentCount) {
-                        p = particles[i]; // Reuse existing particle
-                    } else {
-                        // Create a new particle starting in orbit
-                        const angle = Math.random() * Math.PI * 2;
-                        const startX = centerW + Math.cos(angle) * initialOrbitRadius;
-                        const startY = centerH + Math.sin(angle) * initialOrbitRadius;
-                        p = { x: startX, y: startY, vx: 0, vy: 0, color: particleColor };
-                    }
-        
-                    if (i < targetCount) {
-                        target = newTargetParticles[i];
-                        p.tx = target.tx; // Assign new target
-                        p.ty = target.ty;
-                    } else {
-                        // This particle needs to fade out - give it a target far away
-                        const angle = Math.random() * Math.PI * 2;
-                        p.tx = centerW + Math.cos(angle) * cw * 2; // Target way off screen
-                        p.ty = centerH + Math.sin(angle) * ch * 2;
-                    }
-        
-                    // Reset velocity for the morph (or set initial orbital velocity if new)
-                    if (i >= currentCount) {
-                         // Give new particles an initial tangential velocity for the swirl
-                         const angleToCenter = Math.atan2(p.y - centerH, p.x - centerW);
-                         const orbitalAngle = angleToCenter + Math.PI / 2; // Perpendicular
-                         const speed = Math.random() * 2 + 1;
-                         p.vx = Math.cos(orbitalAngle) * speed;
-                         p.vy = Math.sin(orbitalAngle) * speed;
-                    } else {
-                         p.vx = p.vx || 0; // Keep existing velocity if morphing mid-air? Or reset? Resetting is simpler.
-                         p.vy = p.vy || 0;
-                         // Optional: Give existing particles a slight nudge based on orbit?
-                         // Could add complexity. Let's keep it simpler for now.
-                    }
-        
-        
-                    tempParticles.push(p);
-                }
-        
-                particles = tempParticles;
-                animStartTime = performance.now();
-                animating = true;
-        
-                // Ensure animation loop starts/continues
-                if (!animationFrameId) {
-                    animationFrameId = requestAnimationFrame(animateParticles);
-                }
-            }
-        
-            // --- Animation Loop ---
-            function animateParticles(now) {
-                if (!animating) {
-                    animationFrameId = null;
-                    return;
-                }
-        
-                const elapsed = now - animStartTime;
-                const t = Math.min(1.0, elapsed / easeDuration);
-                const easeT = easeInOutCubic(t); // Progress (0 to 1)
-        
-                ctx.clearRect(0, 0, cw, ch);
-        
-                // Calculate forces and update particles
-                for (let p of particles) {
-                    // Vector towards target
-                    const dx = p.tx - p.x;
-                    const dy = p.ty - p.y;
-                    const distToTarget = Math.sqrt(dx * dx + dy * dy);
-        
-                    // Attraction force (stronger as animation progresses)
-                    const attractionMag = easeT * attractionStrengthBase;
-                    const ax = (dx / (distToTarget + 0.1)) * attractionMag * (distToTarget > 1 ? distToTarget : 1); // Scale force by distance slightly?
-                    const ay = (dy / (distToTarget + 0.1)) * attractionMag * (distToTarget > 1 ? distToTarget : 1);
-        
-                    // Orbital force (stronger at the start, weaker towards end)
-                    const vecToCenter_x = p.x - centerW;
-                    const vecToCenter_y = p.y - centerH;
-                    const distToCenter = Math.sqrt(vecToCenter_x*vecToCenter_x + vecToCenter_y*vecToCenter_y);
-                    // Tangential direction (perpendicular to vector to center)
-                    const tangent_x = -vecToCenter_y / (distToCenter + 0.1);
-                    const tangent_y = vecToCenter_x / (distToCenter + 0.1);
-        
-                    const orbitalMag = (1 - easeT) * orbitalStrengthBase * (1 - Math.min(1, distToCenter / (initialOrbitRadiusFactor*100))); // Weaker near center
-                    const ox = tangent_x * orbitalMag;
-                    const oy = tangent_y * orbitalMag;
-        
-                    // Update velocity
-                    p.vx += ax + ox;
-                    p.vy += ay + oy;
-        
-                    // Apply damping
-                    p.vx *= damping;
-                    p.vy *= damping;
-        
-                    // Update position
-                    p.x += p.vx;
-                    p.y += p.vy;
-        
-                    // --- Draw Particle ---
-                    const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-                    // Optional: vary size slightly based on speed
-                    const size = particleBaseSize + Math.min(2, speed * 0.1);
-                    // Optional: vary opacity slightly? Keep it simple.
-                    ctx.fillStyle = p.color;
-                    ctx.beginPath();
-                    // Use rounded rects or squares instead of circles for a slightly different feel?
-                    // ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
-                    ctx.fillRect(p.x - size/2, p.y - size/2, size, size); // Square particles
-                    ctx.fill();
-                }
-        
-                if (t < 1) {
-                    animationFrameId = requestAnimationFrame(animateParticles);
-                } else {
-                    animating = false;
-                    animationFrameId = null;
-                    // Snap particles exactly to target at the end for clarity
-                    renderCurrentStaticParticles();
-                }
-            }
-        
-            // --- Helper to draw particles in their final position ---
-            function renderCurrentStaticParticles() {
-                 ctx.clearRect(0, 0, cw, ch);
-                 ctx.fillStyle = particleColor;
-                 for (let p of particles) {
-                     // Ensure tx, ty exist before drawing
-                     if (p.tx !== undefined && p.ty !== undefined) {
-                        const size = particleBaseSize;
-                        // Snap to target position
-                        p.x = p.tx;
-                        p.y = p.ty;
-                        p.vx = 0;
-                        p.vy = 0;
-                        ctx.fillRect(p.x - size / 2, p.y - size / 2, size, size);
-                     }
-                 }
-            }
-        
-        
-            // --- Control ---
-            function nextPhrase() {
-                // Don't interrupt animation if it's somehow still going
-                // (though the timer should prevent this)
-                // if (animating) return;
-        
-                currentPhraseIndex = (currentPhraseIndex + 1) % phrases.length;
-                const newParticles = wrapTextAndGetParticles(phrases[currentPhraseIndex]);
-                morphToParticles(newParticles);
-            }
-        
-            // --- Initialization ---
-            resizeCanvas(); // Initial sizing
-            // Generate particles for the first phrase
-            const initialParticles = wrapTextAndGetParticles(phrases[currentPhraseIndex]);
-            // Set initial particles directly without morphing
-            particles = initialParticles.map(p => ({
-                ...p,
-                x: p.tx, // Start at target position
-                y: p.ty,
-                vx: 0,
-                vy: 0
-            }));
-            renderCurrentStaticParticles(); // Draw the first phrase immediately
-        
-            // Start the cycle
-            setInterval(nextPhrase, switchInterval);
-        
-        })();
-        </script>
+        resizeCanvas();
+        const initialParticles = wrapTextAndGetParticles(phrases[currentPhraseIndex]);
+        particles = initialParticles.map(p => ({
+            ...p,
+            x: p.tx,
+            y: p.ty,
+            vx: 0,
+            vy: 0
+        }));
+        renderCurrentStaticParticles();
+    
+        setInterval(nextPhrase, switchInterval);
+    })();
+    </script>
 </body>
 </html>
 
