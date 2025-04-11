@@ -213,9 +213,9 @@
             canvas.style.cursor = 'pointer';
         })();
     </script>
-    <script>
-    (function() {
-        const phrases = [
+   <script>
+   (function() {
+    const phrases = [
             "bits and bytes fanboy",
             "pee + poopoo",
             "powered by curiosity",
@@ -224,261 +224,337 @@
             "creative code conjurer",
             "building digital dreams",
         ];
-        const switchInterval = 4000;
-        const easeDuration = 2500;
-    
-        const particleBaseSize = 1.85;
-        const particleColor = "#1aff39";
-        const sampleGap = 4;
-        const damping = 0.92;
-        const orbitalStrengthBase = 0.8;
-        const attractionStrengthBase = 0.03;
-        const initialOrbitRadiusFactor = 1.5;
-        const fontStyle = "bold 36px Comic Sans";
-    
-        const container = document.getElementById('sayingz');
-        if (!container) return;
-    
-        const canvas = document.createElement('canvas');
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
-        canvas.style.position = 'absolute';
-        canvas.style.top = '0';
-        canvas.style.left = '0';
-        canvas.style.pointerEvents = 'none';
-        container.style.position = 'relative';
-        container.prepend(canvas);
-    
-        const ctx = canvas.getContext('2d');
-        let cw, ch, centerW, centerH;
-    
-        const offCanvas = document.createElement('canvas');
-        const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
-    
-        let particles = [];
-        let animStartTime = null;
-        let currentPhraseIndex = 0;
-        let animating = false;
-        let animationFrameId = null;
-    
-        function easeInOutCubic(t) {
-            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    const switchInterval = 4500;
+    const easeDuration = 2200;
+
+    const particleBaseSize = 1.6;
+    const particleColor = "#1aff39";
+    const sampleGap = 3;
+    const damping = 0.93;
+    const attractionStrength = 0.03;
+    const noiseStrength = 0.1;
+    const initialOrbitFactor = 0.8;
+    const exitSpeed = 1.5;
+
+    const fontStyle = "bold 37px sans-serif";
+    const textPaddingFactor = 0.9;
+
+    const container = document.getElementById('sayingz');
+    if (!container) {
+        console.error("Particle text script error: Container element '#sayingz' not found.");
+        return;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.pointerEvents = 'none';
+    container.style.position = 'relative';
+    container.prepend(canvas);
+
+    const ctx = canvas.getContext('2d');
+    let cw, ch, centerW, centerH, dpr = 1;
+
+    const offCanvas = document.createElement('canvas');
+    const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+
+    let particles = [];
+    let animStartTime = null;
+    let currentPhraseIndex = -1;
+    let animating = false;
+    let animationFrameId = null;
+    let needsResize = true;
+
+    function easeInOutCubic(t) {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function generateTextTargets(text) {
+        if (!cw || !ch || cw <= 0 || ch <= 0) {
+            console.warn("generateTextTargets called with invalid dimensions:", cw, ch);
+            return [];
         }
-    
-        function resizeCanvas() {
-            const dpr = window.devicePixelRatio || 1;
-            cw = container.clientWidth;
-            ch = container.clientHeight;
-            canvas.width = cw * dpr;
-            canvas.height = ch * dpr;
-            ctx.scale(dpr, dpr);
-            centerW = cw / 2;
-            centerH = ch / 2;
-            if (!animating) {
-                renderCurrentStaticParticles();
+
+        offCanvas.width = cw;
+        offCanvas.height = ch;
+
+        offCtx.clearRect(0, 0, cw, ch);
+        offCtx.font = fontStyle;
+        offCtx.textAlign = "center";
+        offCtx.textBaseline = "middle";
+        offCtx.fillStyle = "white";
+
+        const words = text.split(' ');
+        let line = '';
+        let lines = [];
+        const maxWidth = cw * textPaddingFactor;
+        const fontSizeMatch = fontStyle.match(/(\d+)px/);
+        const fontSize = fontSizeMatch ? parseInt(fontSizeMatch[1], 10) : 20;
+        const lineHeight = fontSize * 1.3;
+
+        for (let n = 0; n < words.length; n++) {
+            const testLine = line + words[n] + ' ';
+            const metrics = offCtx.measureText(testLine);
+            const testWidth = metrics.width;
+            if (testWidth > maxWidth && n > 0) {
+                lines.push(line.trim());
+                line = words[n] + ' ';
+            } else {
+                line = testLine;
             }
         }
-    
-        function wrapTextAndGetParticles(text) {
-            const fontSize = parseInt(fontStyle.match(/(\d+)px/)[1], 10);
-            const lineHeight = fontSize * 1.2;
-    
-            offCanvas.width = cw;
-            offCanvas.height = ch;
-            offCtx.clearRect(0, 0, cw, ch);
-            offCtx.font = fontStyle;
-            offCtx.textAlign = "center";
-            offCtx.textBaseline = "middle";
-            offCtx.fillStyle = "white";
-    
-            const words = text.split(' ');
-            let line = '';
-            let lines = [];
-            for (let n = 0; n < words.length; n++) {
-                const testLine = line + words[n] + ' ';
-                const metrics = offCtx.measureText(testLine);
-                const testWidth = metrics.width;
-                if (testWidth > cw * 0.9 && n > 0) {
-                    lines.push(line.trim());
-                    line = words[n] + ' ';
-                } else {
-                    line = testLine;
-                }
-            }
-            lines.push(line.trim());
-    
-            const totalTextHeight = lines.length * lineHeight;
-            let currentY = centerH - totalTextHeight / 2 + lineHeight / 2;
-    
-            const newParticles = [];
-            for (const currentLine of lines) {
-                offCtx.fillText(currentLine, centerW, currentY);
-                currentY += lineHeight;
-            }
-    
+        lines.push(line.trim());
+
+        const totalTextHeight = lines.length * lineHeight;
+        let currentY = centerH - totalTextHeight / 2 + lineHeight / 2;
+
+        for (const currentLine of lines) {
+            offCtx.fillText(currentLine, centerW, currentY);
+            currentY += lineHeight;
+        }
+
+        const newTargets = [];
+        try {
             const imageData = offCtx.getImageData(0, 0, cw, ch).data;
             for (let y = 0; y < ch; y += sampleGap) {
                 for (let x = 0; x < cw; x += sampleGap) {
-                    const index = (y * cw + x) * 4;
+                    const index = (y * offCanvas.width + x) * 4;
                     if (imageData[index + 3] > 128) {
-                        newParticles.push({
-                            tx: x, ty: y,
-                            x: 0, y: 0,
-                            vx: 0, vy: 0,
-                            color: particleColor
-                        });
+                        newTargets.push({ tx: x, ty: y });
                     }
                 }
             }
-            return newParticles;
+        } catch (e) {
+             console.error("Error getting ImageData (maybe canvas too large or tainted?):", e);
+             return [];
         }
-    
-        function morphToParticles(newTargetParticles) {
-            const targetCount = newTargetParticles.length;
-            const currentCount = particles.length;
-            const maxCount = Math.max(targetCount, currentCount);
-            const tempParticles = [];
-            const initialOrbitRadius = Math.min(cw, ch) * initialOrbitRadiusFactor / 2;
-    
-            for (let i = 0; i < maxCount; i++) {
-                let p, target;
-    
-                if (i < currentCount) {
-                    p = particles[i];
-                } else {
-                    const angle = Math.random() * Math.PI * 2;
-                    const startX = centerW + Math.cos(angle) * initialOrbitRadius;
-                    const startY = centerH + Math.sin(angle) * initialOrbitRadius;
-                    p = { x: startX, y: startY, vx: 0, vy: 0, color: particleColor };
-                }
-    
-                if (i < targetCount) {
-                    target = newTargetParticles[i];
-                    p.tx = target.tx;
-                    p.ty = target.ty;
-                } else {
-                    const angle = Math.random() * Math.PI * 2;
-                    p.tx = centerW + Math.cos(angle) * cw * 2;
-                    p.ty = centerH + Math.sin(angle) * ch * 2;
-                }
-    
-                if (i >= currentCount) {
-                    const angleToCenter = Math.atan2(p.y - centerH, p.x - centerW);
-                    const orbitalAngle = angleToCenter + Math.PI / 2;
-                    const speed = Math.random() * 2 + 1;
-                    p.vx = Math.cos(orbitalAngle) * speed;
-                    p.vy = Math.sin(orbitalAngle) * speed;
-                } else {
-                    p.vx = p.vx || 0;
-                    p.vy = p.vy || 0;
-                }
-    
-                tempParticles.push(p);
-            }
-    
-            particles = tempParticles;
-            animStartTime = performance.now();
-            animating = true;
-    
-            if (!animationFrameId) {
-                animationFrameId = requestAnimationFrame(animateParticles);
-            }
-        }
-    
-        function animateParticles(now) {
-            if (!animating) {
-                animationFrameId = null;
-                return;
-            }
-    
-            const elapsed = now - animStartTime;
-            const t = Math.min(1.0, elapsed / easeDuration);
-            const easeT = easeInOutCubic(t);
-    
-            ctx.clearRect(0, 0, cw, ch);
-    
-            for (let p of particles) {
-                const dx = p.tx - p.x;
-                const dy = p.ty - p.y;
-                const distToTarget = Math.sqrt(dx * dx + dy * dy);
-    
-                const attractionMag = easeT * attractionStrengthBase;
-                const ax = (dx / (distToTarget + 0.1)) * attractionMag * (distToTarget > 1 ? distToTarget : 1);
-                const ay = (dy / (distToTarget + 0.1)) * attractionMag * (distToTarget > 1 ? distToTarget : 1);
-    
-                const vecToCenter_x = p.x - centerW;
-                const vecToCenter_y = p.y - centerH;
-                const distToCenter = Math.sqrt(vecToCenter_x*vecToCenter_x + vecToCenter_y*vecToCenter_y);
-                const tangent_x = -vecToCenter_y / (distToCenter + 0.1);
-                const tangent_y = vecToCenter_x / (distToCenter + 0.1);
-    
-                const orbitalMag = (1 - easeT) * orbitalStrengthBase * (1 - Math.min(1, distToCenter / (initialOrbitRadiusFactor*100)));
-                const ox = tangent_x * orbitalMag;
-                const oy = tangent_y * orbitalMag;
-    
-                p.vx += ax + ox;
-                p.vy += ay + oy;
-    
-                p.vx *= damping;
-                p.vy *= damping;
-    
-                p.x += p.vx;
-                p.y += p.vy;
-    
-                const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-                const size = particleBaseSize + Math.min(2, speed * 0.1);
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.fillRect(p.x - size/2, p.y - size/2, size, size);
-                ctx.fill();
-            }
-    
-            if (t < 1) {
-                animationFrameId = requestAnimationFrame(animateParticles);
+        return newTargets;
+    }
+
+    function morphToText(newTargetCoords) {
+        const targetCount = newTargetCoords.length;
+        const currentCount = particles.length;
+        const maxCount = Math.max(targetCount, currentCount);
+        const tempParticles = [];
+        const orbitRadius = Math.min(cw, ch) * initialOrbitFactor;
+
+        for (let i = 0; i < maxCount; i++) {
+            let p;
+
+            if (i < currentCount) {
+                p = particles[i];
+                p.isNew = false;
+                p.isExiting = false;
+
             } else {
-                animating = false;
-                animationFrameId = null;
-                renderCurrentStaticParticles();
+                const angle = Math.random() * Math.PI * 2;
+                const startX = centerW + Math.cos(angle) * orbitRadius * (1 + Math.random() * 0.5);
+                const startY = centerH + Math.sin(angle) * orbitRadius * (1 + Math.random() * 0.5);
+                p = {
+                    x: startX, y: startY,
+                    vx: 0, vy: 0,
+                    tx: 0, ty: 0,
+                    color: particleColor,
+                    isNew: true,
+                    isExiting: false
+                };
+                 const angleToCenter = Math.atan2(p.y - centerH, p.x - centerW);
+                 const orbitalAngle = angleToCenter + Math.PI / 2;
+                 const speed = Math.random() * 1.5 + 0.5;
+                 p.vx = Math.cos(orbitalAngle) * speed;
+                 p.vy = Math.sin(orbitalAngle) * speed;
+            }
+
+            if (i < targetCount) {
+                p.tx = newTargetCoords[i].tx;
+                p.ty = newTargetCoords[i].ty;
+            } else {
+                p.isExiting = true;
+                const angle = Math.atan2(p.y - centerH, p.x - centerW) + (Math.random() - 0.5) * 0.5;
+                p.tx = centerW + Math.cos(angle) * cw * 2;
+                p.ty = centerH + Math.sin(angle) * ch * 2;
+                p.vx += Math.cos(angle) * exitSpeed * (Math.random() + 0.5);
+                p.vy += Math.sin(angle) * exitSpeed * (Math.random() + 0.5);
+            }
+
+            tempParticles.push(p);
+        }
+
+        particles = tempParticles;
+        animStartTime = performance.now();
+        animating = true;
+
+        if (!animationFrameId) {
+            animationFrameId = requestAnimationFrame(animateParticles);
+        }
+    }
+
+    function animateParticles(now) {
+        if (!animating) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+            return;
+        }
+
+        const elapsed = now - animStartTime;
+        const t = Math.min(1.0, elapsed / easeDuration);
+        const easeT = easeInOutCubic(t);
+
+        ctx.clearRect(0, 0, cw, ch);
+
+        const remainingParticles = [];
+
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
+
+            const dx = p.tx - p.x;
+            const dy = p.ty - p.y;
+            const distSq = dx * dx + dy * dy;
+
+            const attractionMag = p.isExiting ? attractionStrength * 0.1 : attractionStrength * (1 + easeT);
+            let attractX = 0, attractY = 0;
+            if (distSq > 0.1) {
+                attractX = dx * attractionMag;
+                attractY = dy * attractionMag;
+            }
+
+            const noiseFactor = p.isExiting ? noiseStrength * 0.5 : noiseStrength * (1 - easeT);
+            const noiseX = (Math.random() - 0.5) * noiseFactor;
+            const noiseY = (Math.random() - 0.5) * noiseFactor;
+
+            p.vx += attractX + noiseX;
+            p.vy += attractY + noiseY;
+
+            const currentDamping = p.isExiting ? 0.99 : damping;
+            p.vx *= currentDamping;
+            p.vy *= currentDamping;
+
+            p.x += p.vx;
+            p.y += p.vy;
+
+            const size = particleBaseSize;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x - size / 2, p.y - size / 2, size, size);
+
+            const removeThreshold = Math.max(cw, ch) * 1.5;
+            const distFromCenterSq = (p.x - centerW)**2 + (p.y - centerH)**2;
+
+            if (!p.isExiting || distFromCenterSq < removeThreshold**2) {
+                remainingParticles.push(p);
             }
         }
-    
-        function renderCurrentStaticParticles() {
-            ctx.clearRect(0, 0, cw, ch);
-            ctx.fillStyle = particleColor;
-            for (let p of particles) {
-                if (p.tx !== undefined && p.ty !== undefined) {
-                    const size = particleBaseSize;
-                    p.x = p.tx;
-                    p.y = p.ty;
-                    p.vx = 0;
-                    p.vy = 0;
-                    ctx.fillRect(p.x - size / 2, p.y - size / 2, size, size);
-                }
+
+        particles = remainingParticles;
+
+        if (t < 1) {
+            animationFrameId = requestAnimationFrame(animateParticles);
+        } else {
+            animating = false;
+            animationFrameId = null;
+            snapParticlesToTarget();
+        }
+    }
+
+    function snapParticlesToTarget() {
+         ctx.clearRect(0, 0, cw, ch);
+         ctx.fillStyle = particleColor;
+         const size = particleBaseSize;
+         for (let p of particles) {
+             if (!p.isExiting && p.tx !== undefined && p.ty !== undefined) {
+                 p.x = p.tx;
+                 p.y = p.ty;
+                 p.vx = 0;
+                 p.vy = 0;
+                 ctx.fillRect(p.x - size / 2, p.y - size / 2, size, size);
+             }
+         }
+    }
+
+    function handleResize() {
+        dpr = window.devicePixelRatio || 1;
+        const newCW = container.clientWidth;
+        const newCH = container.clientHeight;
+
+        if (newCW === cw && newCH === ch && !needsResize) {
+            return;
+        }
+        if (newCW <= 0 || newCH <= 0) {
+             console.warn("Resize resulted in zero dimensions.");
+             return;
+        }
+
+        cw = newCW;
+        ch = newCH;
+        needsResize = false;
+
+        canvas.width = cw * dpr;
+        canvas.height = ch * dpr;
+        canvas.style.width = `${cw}px`;
+        canvas.style.height = `${ch}px`;
+
+        ctx.scale(dpr, dpr);
+        centerW = cw / 2;
+        centerH = ch / 2;
+
+        if (currentPhraseIndex >= 0 && particles.length > 0) {
+            const currentText = phrases[currentPhraseIndex];
+            const newTargets = generateTextTargets(currentText);
+
+            if (!animating) {
+                 console.log("Resized while static - Morphing to recalculated targets");
+                 morphToText(newTargets);
+            } else {
+                 console.log("Resized while animating - Updating targets");
+                 const targetCount = newTargets.length;
+                 let targetIndex = 0;
+                 for(let p of particles) {
+                     if (!p.isExiting && targetIndex < targetCount) {
+                         p.tx = newTargets[targetIndex].tx;
+                         p.ty = newTargets[targetIndex].ty;
+                         targetIndex++;
+                     }
+                 }
             }
+        } else if (currentPhraseIndex === -1) {
+             console.log("Initial resize complete, triggering first phrase.");
+             setTimeout(nextPhrase, 50);
         }
-    
-        function nextPhrase() {
-            currentPhraseIndex = (currentPhraseIndex + 1) % phrases.length;
-            const newParticles = wrapTextAndGetParticles(phrases[currentPhraseIndex]);
-            morphToParticles(newParticles);
+    }
+
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(handleResize, 150);
+    });
+
+    function nextPhrase() {
+        if (needsResize || !cw || !ch) {
+            console.warn("Canvas not ready, delaying nextPhrase call.");
+            handleResize();
+            setTimeout(nextPhrase, 200);
+            return;
         }
-    
-        window.addEventListener('resize', resizeCanvas);
-        
-        resizeCanvas();
-        const initialParticles = wrapTextAndGetParticles(phrases[currentPhraseIndex]);
-        particles = initialParticles.map(p => ({
-            ...p,
-            x: p.tx,
-            y: p.ty,
-            vx: 0,
-            vy: 0
-        }));
-        renderCurrentStaticParticles();
-    
-        setInterval(nextPhrase, switchInterval);
-    })();
-    </script>
+
+        currentPhraseIndex = (currentPhraseIndex + 1) % phrases.length;
+        const text = phrases[currentPhraseIndex];
+        console.log("Morphing to:", text);
+        const newTargets = generateTextTargets(text);
+
+        if (newTargets.length === 0 && text.length > 0) {
+             console.error("Failed to generate targets for:", text, "- Check canvas size and text rendering.");
+        }
+
+        morphToText(newTargets);
+    }
+
+    handleResize();
+    setInterval(nextPhrase, switchInterval);
+
+})();
+   </script>
 </body>
 </html>
 
