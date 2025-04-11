@@ -37,18 +37,6 @@ nav ul.fade-transition-medium {
 
 }
 
-
-/* --- Existing CSS (Keep these as they are essential) --- */
-
-#content {
-
-    /* display: none; */ /* We will control visibility via opacity and display property in JS now */
-
-    /* Add other content styling */
-
-}
-
-
 /* Keep the rest of your existing CSS rules */
 
 body{
