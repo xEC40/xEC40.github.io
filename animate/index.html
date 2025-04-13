@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animate</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #111; }
+        canvas { display: block; }
+        
+        /* Logo Canvas Styling */
+        #logoWrapper {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            padding: 5px;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            display: none;
+        }
+        #logoCanvas {
+            display: block;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- Logo Canvas -->
+    <div id="logoWrapper">
+        <a href="/">
+            <canvas id="logoCanvas" width="70" height="70"></canvas>
+        </a>
+    </div>
+    
+    <!-- Main Canvas -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Logo Canvas Animation Script -->
+    <script>
+        // Create a global object to manage animation states
+        window.animationStates = {
+            mainAnimationPhase: 'wandering',
+            logoInitialized: false
+        };
+        
+        function initLogoAnimation() {
+            const canvas = document.getElementById('logoCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            let width, height;
+
+            function resize() {
+                width = canvas.width = 100;
+                height = canvas.height = 100;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+             
+            const sphereStep = 10 * Math.PI / 180; 
+            const ringCount = 400;
+            const sphereRadius = 15;
+            const ringRadius = 43;
+            const ringTiltAngle = 6 * Math.PI / 180; 
+            const bgColor = 'black';
+            const pointSize = .7; 
+
+            let spherePoints = [];
+            let ringPoints = [];
+            let t = 0;
+            let sphereRotation = 0;
+            let ringRotation = 0;
+            let ringTiltDirection = 1;
+
+            const sinTilt = Math.sin(ringTiltAngle * ringTiltDirection);
+            const cosTilt = Math.cos(ringTiltAngle * ringTiltDirection);
+
+            function random(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            function normalize(x, y, z) {
+                const mag = Math.sqrt(x * x + y * y + z * z);
+                return { x: x / mag, y: y / mag, z: z / mag };
+            }
+
+            function mapValue(value, inMin, inMax, outMin, outMax) {
+                return ((value - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin;
+            }
+
+            function initSpherePoints() {
+                for (let theta = 0; theta < Math.PI; theta += sphereStep) { 
+                    for (let phi = 0; phi < 2 * Math.PI; phi += sphereStep) { 
+                        const sinTheta = Math.sin(theta);
+                        const x = sphereRadius * sinTheta * Math.cos(phi);
+                        const y = sphereRadius * sinTheta * Math.sin(phi);
+                        const z = sphereRadius * Math.cos(theta);
+                        const angleOffset = random(0, 2 * Math.PI);
+                        const speed = random(0.5, 1.5);
+                        spherePoints.push({ x, y, z, angleOffset, speed });
+                    }
+                }
+            }
+
+            function initRingPoints() {
+                for (let i = 0; i < ringCount; i++) {
+                    const angle = (i / ringCount) * 2 * Math.PI;
+                    const x = ringRadius * Math.cos(angle);
+                    const z = ringRadius * Math.sin(angle);
+                    const angleOffset = random(0, 2 * Math.PI);
+                    const speed = random(0.5, 1.5);
+                    ringPoints.push({ x, z, angleOffset, speed });
+                }
+            }
+
+            function drawPoint(x, y, alpha) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(x, y, pointSize, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+            function render() {
+                // clear background
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(0, 0, width, height);
+
+                // translate to center
+                ctx.save();
+                ctx.translate(width / 2, height / 2);
+
+                // dynamic alpha for points
+                const dynamicAlpha = 150 + 50 * Math.sin(t / 50);
+                const alpha = Math.min(Math.max(dynamicAlpha, 0), 255);
+
+                // render sphere Points
+                const sphereRotCos = Math.cos(sphereRotation);
+                const sphereRotSin = Math.sin(sphereRotation);
+                for (let i = 0; i < spherePoints.length; i++) {
+                    const p = spherePoints[i];
+                    // calculate oscillation
+                    const angle = p.angleOffset + t * 0.01 * p.speed;
+                    const oscillation = 5 * Math.sin(angle);
+                    const norm = normalize(p.x, p.y, p.z);
+                    let x = p.x + norm.x * oscillation;
+                    let y = p.y + norm.y * oscillation;
+                    let z = p.z + norm.z * oscillation;
+
+                    // rotate around Y-axis (sphereRotation)
+                    const rotatedX = x * sphereRotCos - z * sphereRotSin;
+                    const rotatedZ = x * sphereRotSin + z * sphereRotCos;
+
+                    // simple perspective scaling
+                    const scaleFactor = mapValue(rotatedZ, -sphereRadius - 20, sphereRadius + 20, 0.5, 1.5);
+                    const finalX = rotatedX * scaleFactor;
+                    const finalY = y * scaleFactor;
+
+                    drawPoint(finalX, finalY, alpha);
+                }
+
+                const ringRotCos = Math.cos(ringRotation);
+                const ringRotSin = Math.sin(ringRotation);
+                for (let i = 0; i < ringPoints.length; i++) {
+                    const p = ringPoints[i];
+
+                    let rotatedX = p.x * ringRotCos + p.z * ringRotSin;
+                    let rotatedZ = p.x * ringRotSin - p.z * ringRotCos;
+
+                    // tilt
+                    let y = rotatedZ * sinTilt;
+                    rotatedZ *= cosTilt;
+
+                    // oscillation
+                    const angle = p.angleOffset + t * 0.01 * p.speed;
+                    const oscillation = 2 * Math.sin(angle);
+
+                    const oscX = -y * oscillation;
+                    const oscY = oscillation;
+                    rotatedX += oscX;
+                    y -= oscY;
+
+                    const scaleFactor = mapValue(rotatedZ, -ringRadius - 20, ringRadius + 20, 0.5, 1.5);
+                    const finalX = rotatedX * scaleFactor;
+                    const finalY = y * scaleFactor;
+
+                    drawPoint(finalX, finalY, alpha);
+                }
+
+                ctx.restore();
+
+                t += 1;
+                sphereRotation += 0.3 * Math.PI / 180; // convert degrees to radians
+                ringRotation += .4 * Math.PI / 180;
+
+                requestAnimationFrame(render);
+            }
+
+            function init() {
+                initSpherePoints();
+                initRingPoints();
+                render();
+                window.animationStates.logoInitialized = true;
+            }
+
+            // Initialize points but only start rendering when needed
+            initSpherePoints();
+            initRingPoints();
+            
+            // Set up the logo animation but only render when revealed
+            const logoWrapper = document.getElementById('logoWrapper');
+            
+            // Create a method to reveal the logo
+            window.showLogo = function() {
+                if (!window.animationStates.logoInitialized) {
+                    render();
+                    window.animationStates.logoInitialized = true;
+                }
+                
+                logoWrapper.style.display = 'block';
+                setTimeout(() => {
+                    logoWrapper.style.opacity = '1';
+                }, 50);
+            };
+            
+            // change cursor to pointer on hover
+            canvas.style.cursor = 'pointer';
+        }
+        
+        // Initialize the logo animation setup
+        initLogoAnimation();
+    </script>
+
+    <!-- Particle Animation Script -->
+    <script> 
+    document.addEventListener('DOMContentLoaded', () => {
+      // Create canvas if it doesn't exist
+      let canvas = document.getElementById('particleCanvas');
+      if (!canvas) {
+          canvas = document.createElement('canvas');
+          canvas.id = 'particleCanvas';
+          canvas.style.position = 'fixed';
+          canvas.style.top = '0';
+          canvas.style.left = '0';
+          canvas.style.width = '100%';
+          canvas.style.height = '100%';
+          canvas.style.zIndex = '-1';
+          document.body.appendChild(canvas);
+      }
+      const ctx = canvas.getContext('2d');
+      let width, height;
+      let particles = [];
+      const word = "Animate";
+      let targetPositions = []; // Stores {x, y} target coordinates
+      // --- Configuration ---
+      const particleCount = 1750;
+      const particleSize = 1;
+      const wanderDurationFrames = 120; // 3 seconds at 60fps
+      const settleSpeed = 0.08;
+      const finalWanderStrength = 0.8; // Reduced for more stable text
+      const fontSize = 120; // Explicit font size
+      const fontFamily = 'Arial, sans-serif';
+      const glow = true;
+      const trailAmount = 0.2;
+      // ---------------------
+      let frameCount = 0;
+      let animationState = 'wandering'; // 'wandering', 'settling', 'dancing'
+      // Particle Class
+      class Particle {
+          constructor() {
+              // Start randomly on screen
+              this.x = Math.random() * width;
+              this.y = Math.random() * height;
+              // No target yet - will be assigned later
+              this.targetX = null;
+              this.targetY = null;
+              // Random velocity for wandering phase
+              this.vx = Math.random() * 4 - 2;
+              this.vy = Math.random() * 4 - 2;
+              // Properties for the final dance
+              this.wanderPhaseX = Math.random() * Math.PI * 2;
+              this.wanderPhaseY = Math.random() * Math.PI * 2;
+              this.wanderSpeedX = Math.random() * 0.05 + 0.02;
+              this.wanderSpeedY = Math.random() * 0.05 + 0.02;
+              // Color properties
+              this.hue = Math.random() * 60 + 180; // Blues/cyans
+              this.brightness = Math.random() * 50 + 50; // 50-100% brightness
+              this.alpha = 0.8 + Math.random() * 0.2; // 0.8-1.0 opacity
+              // For tracking settling status
+              this.settled = false;
+          }
+          update() {
+              if (animationState === 'wandering') {
+                  // Random movement
+                  this.x += this.vx;
+                  this.y += this.vy;
+                  // Bounce off edges
+                  if (this.x < 0 || this.x > width) this.vx *= -1;
+                  if (this.y < 0 || this.y > height) this.vy *= -1;
+                  // Add slight random change
+                  this.vx += (Math.random() - 0.5) * 0.3;
+                  this.vy += (Math.random() - 0.5) * 0.3;
+                  // Dampen velocity
+                  this.vx *= 0.98;
+                  this.vy *= 0.98;
+              } else if (animationState === 'settling') {
+                  if (this.targetX === null) return; // Skip if no target assigned
+                  // Move toward target
+                  const dx = this.targetX - this.x;
+                  const dy = this.targetY - this.y;
+                  this.x += dx * settleSpeed;
+                  this.y += dy * settleSpeed;
+                  // Check if close enough to target
+                  if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) {
+                      this.settled = true;
+                  }
+              } else if (animationState === 'dancing') {
+                  if (this.targetX === null) return; // Skip if no target assigned
+                  // Small movement around target position
+                  this.wanderPhaseX += this.wanderSpeedX;
+                  this.wanderPhaseY += this.wanderSpeedY;
+                  this.x = this.targetX + Math.sin(this.wanderPhaseX) * finalWanderStrength;
+                  this.y = this.targetY + Math.cos(this.wanderPhaseY) * finalWanderStrength;
+              }
+          }
+          draw() {
+              // Calculate current hue with slow cycling
+              const currentHue = (this.hue + frameCount * 0.1) % 360;
+              // Draw particle
+              ctx.fillStyle = `hsla(${currentHue}, 100%, ${this.brightness}%, ${this.alpha})`;
+              ctx.beginPath();
+              ctx.arc(this.x, this.y, particleSize, 0, Math.PI * 2);
+              ctx.fill();
+          }
+      }
+      // Generate target positions from text
+      function generateTextTargets() {
+          targetPositions = [];
+          // Create an offscreen canvas for text analysis
+          const offscreenCanvas = document.createElement('canvas');
+          const offscreenCtx = offscreenCanvas.getContext('2d');
+          // Set canvas size
+          offscreenCanvas.width = width;
+          offscreenCanvas.height = height;
+          // Clear with black
+          offscreenCtx.fillStyle = 'black';
+          offscreenCtx.fillRect(0, 0, width, height);
+          // Draw text in white
+          offscreenCtx.fillStyle = 'white';
+          offscreenCtx.font = `bold ${fontSize}px ${fontFamily}`;
+          offscreenCtx.textAlign = 'center';
+          offscreenCtx.textBaseline = 'middle';
+          offscreenCtx.fillText(word, width / 2, height / 2);
+          // Get pixel data
+          const imageData = offscreenCtx.getImageData(0, 0, width, height);
+          const data = imageData.data;
+          // Sample pixels to create target positions
+          const sampleStep = 3; // Check every 3rd pixel for better density
+          for (let y = 0; y < height; y += sampleStep) {
+              for (let x = 0; x < width; x += sampleStep) {
+                  const index = (y * width + x) * 4;
+                  // If pixel is not black (text is white)
+                  if (data[index] > 200) { // Check red channel (white has R=255)
+                      targetPositions.push({
+                          x: x,
+                          y: y
+                      });
+                  }
+              }
+          }
+          // Shuffle targets for random assignment
+          targetPositions = targetPositions.sort(() => Math.random() - 0.5);
+      }
+      // Assign targets to particles
+      function assignTargets() {
+          if (targetPositions.length === 0) return;
+          // Limit particles to available targets
+          const activeParticleCount = Math.min(particles.length, targetPositions.length);
+          // Assign each particle a unique target
+          for (let i = 0; i < activeParticleCount; i++) {
+              particles[i].targetX = targetPositions[i].x;
+              particles[i].targetY = targetPositions[i].y;
+          }
+          // For extra particles, assign random targets from the available pool
+          for (let i = activeParticleCount; i < particles.length; i++) {
+              const randomIndex = Math.floor(Math.random() * targetPositions.length);
+              particles[i].targetX = targetPositions[randomIndex].x;
+              particles[i].targetY = targetPositions[randomIndex].y;
+          }
+      }
+      // Initialize particles
+      function createParticles() {
+          particles = [];
+          for (let i = 0; i < particleCount; i++) {
+              particles.push(new Particle());
+          }
+      }
+      // Check if most particles have settled
+      function checkSettlingComplete() {
+          const settledCount = particles.filter(p => p.settled).length;
+          const settledPercentage = settledCount / particles.length;
+          if (settledPercentage > 0.9) { // 90% settled
+              animationState = 'dancing';
+          }
+      }
+      // Animation loop
+      function animate() {
+          // Update frame counter
+          frameCount++;
+          // State transitions
+          if (animationState === 'wandering' && frameCount >= wanderDurationFrames) {
+              animationState = 'settling';
+              // Update the global animation state
+              window.animationStates.mainAnimationPhase = 'settling';
+              // Show the logo when wandering phase ends
+              if (typeof window.showLogo === 'function') {
+                  window.showLogo();
+              }
+          }
+          if (animationState === 'settling' && frameCount % 10 === 0) {
+              checkSettlingComplete();
+          }
+          // Clear canvas with trail effect
+          ctx.fillStyle = `rgba(0, 0, 0, ${trailAmount})`;
+          ctx.fillRect(0, 0, width, height);
+          // Set blending mode for glow effect
+          if (glow) {
+              ctx.globalCompositeOperation = 'lighter';
+          }
+          // Update and draw particles
+          particles.forEach(particle => {
+              particle.update();
+              particle.draw();
+          });
+          // Reset blending mode
+          ctx.globalCompositeOperation = 'source-over';
+          // Continue animation
+          requestAnimationFrame(animate);
+      }
+      // Handle window resize
+      function resizeCanvas() {
+          width = canvas.width = window.innerWidth;
+          height = canvas.height = window.innerHeight;
+          // Regenerate text targets and reassign
+          generateTextTargets();
+          assignTargets();
+      }
+      // Initialize
+      function init() {
+          resizeCanvas();
+          createParticles();
+          generateTextTargets();
+          assignTargets();
+          animate();
+      }
+      // Event listeners
+      window.addEventListener('resize', resizeCanvas);
+      // Start animation
+      init();
+  }); 
+  </script>
+</body>
+</html>

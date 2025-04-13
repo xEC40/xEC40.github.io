@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palm Tree Beach Scene with Optimized Sun Animation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #87CEEB;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas to full window size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        resizeCanvas();
+        
+        // Load textures
+        const barkTexture = new Image();
+        barkTexture.src = 'bark.jpg'; // You'll need to replace this with your actual texture path
+        let barkPattern = null;
+        
+        // Add sand texture
+        const sandTexture = new Image();
+        sandTexture.src = 'sand.jpg'; // You'll need to replace this with your actual texture path
+        let sandPattern = null;
+        
+        // Add clouds texture (only for sunny side)
+        const cloudsTexture = new Image();
+        cloudsTexture.src = 'clouds.png'; // Cloud image for the sunny side
+        
+        // Initialize variables for better performance
+        let time = 0;
+        // Pre-calculate sun constants for performance
+        let sunX, sunY, sunRadius, sunGlowRadius;
+        
+        // Create clouds for sunny side
+        const clouds = [];
+        const CLOUD_COUNT = 4; // Number of cloud instances to draw
+        
+        // Create palm tree elements
+        const palmTree = {
+            trunkX: 0,
+            trunkY: 0,
+            trunkHeight: 0,
+            trunkWidth: 0,
+            tipX: 0,
+            tipY: 0
+        };
+        
+        // Create raindrops array
+        const raindrops = [];
+        const RAINDROP_COUNT = 200;
+        
+        // Create sand dunes
+        const sandDunes = [];
+        const DUNE_COUNT = 15;
+        
+        // For performance, pre-compute sine and cosine values for rays
+        const RAY_COUNT = 12; // Reduced for better performance
+        const rayAngles = [];
+        const raySinValues = [];
+        const rayCosValues = [];
+        
+        // Initialize scene elements based on canvas size
+        function initScene() {
+            // Set up sun positioning and dimensions
+            sunX = canvas.width * 0.1;
+            sunY = canvas.height * 0.1;
+            sunRadius = Math.min(canvas.width, canvas.height) * 0.07;
+            sunGlowRadius = sunRadius * 1.8;
+            
+            // Pre-calculate ray angles for performance
+            for (let i = 0; i < RAY_COUNT; i++) {
+                const angle = (i / RAY_COUNT) * Math.PI * 2;
+                rayAngles[i] = angle;
+                raySinValues[i] = Math.sin(angle);
+                rayCosValues[i] = Math.cos(angle);
+            }
+            
+            // Palm tree setup
+            palmTree.trunkHeight = canvas.height * 0.35;
+            palmTree.trunkWidth = canvas.width * 0.02;
+            palmTree.trunkX = canvas.width * 0.5;
+            palmTree.trunkY = canvas.height * 0.9;
+            palmTree.tipX = palmTree.trunkX + palmTree.trunkWidth * 2;
+            palmTree.tipY = palmTree.trunkY - palmTree.trunkHeight;
+            
+            // Initialize sand dunes
+            sandDunes.length = 0;
+            const baseY = canvas.height * 0.9;
+            
+            for (let i = 0; i <= DUNE_COUNT; i++) {
+                const x = (canvas.width / DUNE_COUNT) * i;
+                const frequency1 = 0.01;
+                const frequency2 = 0.03;
+                const frequency3 = 0.007;
+                
+                const amplitude1 = canvas.height * 0.03;
+                const amplitude2 = canvas.height * 0.015;
+                const amplitude3 = canvas.height * 0.02;
+                
+                const offset = Math.PI / 3;
+                
+                const variation = 
+                    Math.sin(x * frequency1 + offset) * amplitude1 +
+                    Math.sin(x * frequency2) * amplitude2 +
+                    Math.cos(x * frequency3) * amplitude3;
+                
+                sandDunes.push({
+                    x: x,
+                    y: baseY + variation
+                });
+                
+                if (Math.abs(x - palmTree.trunkX) < 10) {
+                    palmTree.trunkY = baseY + variation;
+                }
+            }
+            
+            // Initialize clouds for the sunny side
+            clouds.length = 0;
+            for (let i = 0; i < CLOUD_COUNT; i++) {
+                clouds.push({
+                    x: Math.random() * (canvas.width * 0.5), // Only on left side (sunny)
+                    y: Math.random() * (canvas.height * 0.4), // Upper part of the sky
+                    width: canvas.width * (0.15 + Math.random() * 0.15), // Random sizes
+                    height: canvas.height * (0.05 + Math.random() * 0.05),
+                    speed: (0.2 + Math.random() * 0.3) // Slow movement speed
+                });
+            }
+            
+            // Initialize raindrops - only on the right side
+            raindrops.length = 0;
+            for (let i = 0; i < RAINDROP_COUNT; i++) {
+                raindrops.push({
+                    x: Math.random() * (canvas.width * 0.5) + (canvas.width * 0.5), // Right half only
+                    y: Math.random() * canvas.height,
+                    length: Math.random() * 10 + 10,
+                    speed: Math.random() * 15 + 5,
+                    thickness: Math.random() * 1.5 + 0.5
+                });
+            }
+        }
+
+        // OPTIMIZED SUN FUNCTION
+        function drawOptimizedSun(time) {
+            // Use cached sun position and size values
+            
+            // Create sun rays using optimized approach
+            const rayBaseRadius = sunRadius * 1.05;
+            const rayLength = sunRadius * 0.5 + Math.sin(time * 2) * sunRadius * 0.1;
+            
+            ctx.save();
+            
+            // Batch all ray operations together to improve performance
+            ctx.globalAlpha = 0.7;
+            ctx.lineWidth = sunRadius * 0.08;
+            ctx.lineCap = 'round';
+            
+            // Draw rays in a single path for better performance
+            ctx.beginPath();
+            for (let i = 0; i < RAY_COUNT; i++) {
+                // Use pre-calculated values and add time for animation
+                const angle = rayAngles[i] + time * 0.2;
+                const sinVal = Math.sin(angle);
+                const cosVal = Math.cos(angle);
+                
+                // Calculate dynamic ray length with performance in mind
+                const dynamicLength = rayLength + Math.sin(time + i) * sunRadius * 0.1;
+                
+                const fromX = sunX + cosVal * rayBaseRadius;
+                const fromY = sunY + sinVal * rayBaseRadius;
+                const toX = sunX + cosVal * (rayBaseRadius + dynamicLength);
+                const toY = sunY + sinVal * (rayBaseRadius + dynamicLength);
+                
+                ctx.moveTo(fromX, fromY);
+                ctx.lineTo(toX, toY);
+            }
+            
+            // Use simpler gradient for better performance
+            const rayGrad = ctx.createLinearGradient(sunX - sunRadius, sunY - sunRadius, sunX + sunRadius, sunY + sunRadius);
+            rayGrad.addColorStop(0, "rgba(255, 215, 90, 1)");
+            rayGrad.addColorStop(1, "rgba(255, 223, 122, 0)");
+            ctx.strokeStyle = rayGrad;
+            ctx.stroke();
+            
+            // Draw sun glow - simpler gradient for performance
+            const glowRadius = sunGlowRadius + Math.sin(time * 2) * sunRadius * 0.1;
+            const glowGradient = ctx.createRadialGradient(
+                sunX, sunY, sunRadius * 0.5,
+                sunX, sunY, glowRadius
+            );
+            glowGradient.addColorStop(0, "rgba(255, 240, 180, 0.5)");
+            glowGradient.addColorStop(1, "rgba(255, 201, 40, 0)");
+            
+            ctx.globalAlpha = 0.8;
+            ctx.fillStyle = glowGradient;
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, glowRadius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw the sun body
+            // Use a simpler gradient with fewer color stops for better performance
+            const pulseEffect = Math.sin(time * 1.5) * (sunRadius * 0.05);
+            const sunGradient = ctx.createRadialGradient(
+                sunX - sunRadius * 0.2, sunY - sunRadius * 0.2, 0,
+                sunX, sunY, sunRadius + pulseEffect
+            );
+            sunGradient.addColorStop(0, "rgb(255, 255, 180)");
+            sunGradient.addColorStop(1, "rgb(255, 204, 51)");
+            
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = sunGradient;
+            
+            // Use a single shadow for the entire sun instead of per-element
+            ctx.shadowColor = "rgba(255, 220, 100, 0.5)";
+            ctx.shadowBlur = sunRadius * 0.8;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, sunRadius + pulseEffect, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Add subtle texture to the sun for visual interest (while maintaining performance)
+            ctx.globalAlpha = 0.1;
+            ctx.strokeStyle = "rgba(255, 160, 0, 0.3)";
+            ctx.lineWidth = 1;
+            
+            // Draw a few arcs for texture instead of many details
+            for (let i = 0; i < 3; i++) {
+                const arcRadius = sunRadius * (0.5 + i * 0.2);
+                ctx.beginPath();
+                ctx.arc(sunX, sunY, arcRadius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+        }
+
+        // Draw sky gradient - split between day and dusk
+        function drawSky() {
+            // Left side (0 to 50% of width): Daytime sky
+            const daytimeGradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.9);
+            daytimeGradient.addColorStop(0, '#4682B4');
+            daytimeGradient.addColorStop(1, '#87CEEB');
+            
+            ctx.fillStyle = daytimeGradient;
+            ctx.fillRect(0, 0, canvas.width * 0.5, canvas.height * 0.9);
+            
+            // Right side (50% to 100% of width): Dusk sky
+            const duskGradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.9);
+            duskGradient.addColorStop(0, '#2C3E50');
+            duskGradient.addColorStop(0.5, '#E74C3C');
+            duskGradient.addColorStop(0.7, '#F39C12');
+            duskGradient.addColorStop(1, '#D35400');
+            
+            ctx.fillStyle = duskGradient;
+            ctx.fillRect(canvas.width * 0.5, 0, canvas.width * 0.5, canvas.height * 0.9);
+        }
+        
+        // Draw ground
+        function drawGround() {
+            if (sandDunes.length === 0) return;
+            
+            // Draw the sand with the original wavy top line
+            ctx.beginPath();
+            
+            // Start at the left bottom corner
+            ctx.moveTo(0, canvas.height);
+            
+            // Move to the first dune point
+            ctx.lineTo(sandDunes[0].x, sandDunes[0].y);
+            
+            // Connect all dune points with a curve for smoother look
+            for (let i = 0; i < sandDunes.length - 1; i++) {
+                // Control point for smoother curves
+                const controlX = (sandDunes[i].x + sandDunes[i+1].x) / 2;
+                const controlY = (sandDunes[i].y + sandDunes[i+1].y) / 2;
+                
+                // Use quadratic curves for smoother transitions
+                ctx.quadraticCurveTo(
+                    sandDunes[i].x, sandDunes[i].y,
+                    controlX, controlY
+                );
+            }
+            
+            // Last point
+            ctx.lineTo(sandDunes[sandDunes.length-1].x, sandDunes[sandDunes.length-1].y);
+            
+            // Complete the shape by going to the bottom right and back to start
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.lineTo(0, canvas.height);
+            ctx.closePath();
+            
+            // Set fill styles based on whether we have textures
+            if (sandTexture.complete && sandTexture.naturalWidth !== 0) {
+                // Create a temporary canvas to scale the texture
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                // Set texture scale - make it smaller to see the pattern 
+                const scaleX = 0.15;
+                const scaleY = 0.15;
+                
+                // Size the temp canvas based on the scaled texture
+                tempCanvas.width = sandTexture.width * scaleX;
+                tempCanvas.height = sandTexture.height * scaleY;
+                
+                // Draw the scaled texture to the temp canvas
+                tempCtx.drawImage(
+                    sandTexture, 
+                    0, 0, 
+                    sandTexture.width, sandTexture.height, 
+                    0, 0, 
+                    tempCanvas.width, tempCanvas.height
+                );
+                
+                // Create the pattern from the scaled texture
+                sandPattern = ctx.createPattern(tempCanvas, 'repeat');
+                
+                // Apply pattern to the ground
+                ctx.fillStyle = sandPattern;
+                ctx.fill();
+                
+                // Add different overlays for day and dusk sides
+                // Day side overlay
+                ctx.fillStyle = 'rgba(244, 164, 96, 0.2)'; // Sandy brown with transparency
+                ctx.fillRect(0, canvas.height * 0.9, canvas.width * 0.5, canvas.height * 0.1);
+                
+                // Dusk side overlay
+                ctx.fillStyle = 'rgba(210, 105, 30, 0.3)'; // Orange-brown with transparency
+                ctx.fillRect(canvas.width * 0.5, canvas.height * 0.9, canvas.width * 0.5, canvas.height * 0.1);
+            } else {
+                // Fallback: Use a gradient for the sand
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+                gradient.addColorStop(0, '#F4A460'); // Sandy brown (day side)
+                gradient.addColorStop(0.5, '#F4A460'); // Sandy brown (day side)
+                gradient.addColorStop(0.5, '#CD853F'); // Peru (dusk side)
+                gradient.addColorStop(1, '#CD853F'); // Peru (dusk side)
+                
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                // Add texture to sand
+                ctx.globalAlpha = 0.3;
+                for (let i = 0; i < 2000; i++) {
+                    const x = Math.random() * canvas.width;
+                    const y = canvas.height * 0.9 + Math.random() * (canvas.height * 0.1);
+                    const size = Math.random() * 2 + 0.5;
+                    
+                    // Check if below dune line
+                    let belowDune = true;
+                    for (let j = 0; j < sandDunes.length - 1; j++) {
+                        if (x >= sandDunes[j].x && x <= sandDunes[j+1].x) {
+                            // Interpolate y-value
+                            const ratio = (x - sandDunes[j].x) / (sandDunes[j+1].x - sandDunes[j].x);
+                            const duneY = sandDunes[j].y + ratio * (sandDunes[j+1].y - sandDunes[j].y);
+                            
+                            if (y < duneY) {
+                                belowDune = false;
+                            }
+                            break;
+                        }
+                    }
+                    
+                    if (belowDune) {
+                        if (x < canvas.width * 0.5) {
+                            // Day side
+                            ctx.fillStyle = i % 2 === 0 ? '#DEB887' : '#D2B48C';
+                        } else {
+                            // Dusk side
+                            ctx.fillStyle = i % 2 === 0 ? '#B8860B' : '#A0522D';
+                        }
+                        ctx.fillRect(x, y, size, size);
+                    }
+                }
+                ctx.globalAlpha = 1.0;
+            }
+            
+            // Add small details to give the sand more depth and texture along the dunes
+            ctx.strokeStyle = 'rgba(210, 180, 140, 0.4)';
+            ctx.lineWidth = 1;
+            
+            // Draw small lines for texture on the dunes
+            for (let i = 0; i < canvas.width; i += 10) {
+                // Find the y-position for this x-coordinate along the dune line
+                let duneY = canvas.height * 0.9; // Default
+                
+                // Find the relevant dune segment
+                for (let j = 0; j < sandDunes.length - 1; j++) {
+                    if (i >= sandDunes[j].x && i <= sandDunes[j+1].x) {
+                        // Interpolate
+                        const ratio = (i - sandDunes[j].x) / (sandDunes[j+1].x - sandDunes[j].x);
+                        duneY = sandDunes[j].y + ratio * (sandDunes[j+1].y - sandDunes[j].y);
+                        break;
+                    }
+                }
+                
+                // Draw texture details below the dune line
+                const lineLength = 3 + Math.random() * 7;
+                const lineAngle = Math.PI/2 + (Math.random() - 0.5) * 0.5; // Mostly vertical with some variation
+                
+                ctx.beginPath();
+                ctx.moveTo(i, duneY + 2);
+                ctx.lineTo(
+                    i + Math.cos(lineAngle) * lineLength,
+                    duneY + 2 + Math.sin(lineAngle) * lineLength
+                );
+                ctx.stroke();
+            }
+        }
+        
+        // Draw palm tree trunk
+        function drawTrunk() {
+            ctx.save(); // Save the current context state
+            
+            // Set up the clip path for the trunk shape
+            ctx.beginPath();
+            ctx.moveTo(palmTree.trunkX - palmTree.trunkWidth/2, palmTree.trunkY);
+            
+            // Left side curve
+            ctx.bezierCurveTo(
+                palmTree.trunkX - palmTree.trunkWidth/2, palmTree.trunkY - palmTree.trunkHeight * 0.6,
+                palmTree.trunkX + palmTree.trunkWidth * 2, palmTree.trunkY - palmTree.trunkHeight * 0.7,
+                palmTree.tipX, palmTree.tipY
+            );
+            
+            // Right side curve
+            ctx.bezierCurveTo(
+                palmTree.tipX + palmTree.trunkWidth/2, palmTree.tipY + palmTree.trunkHeight * 0.1,
+                palmTree.trunkX + palmTree.trunkWidth*2, palmTree.trunkY - palmTree.trunkHeight * 0.5,
+                palmTree.trunkX + palmTree.trunkWidth/2, palmTree.trunkY
+            );
+            
+            ctx.closePath();
+            
+            // Apply the bark texture if loaded, otherwise use a gradient fallback
+            if (barkTexture.complete && barkTexture.naturalWidth !== 0) {
+                // Create a temporary canvas to scale the texture
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                // Set texture scale - make it much smaller to see the entire pattern
+                // Adjust these values to control texture scale
+                const scaleX = 0.05;
+                const scaleY = 0.05;
+                
+                // Size the temp canvas based on the trunk bounding box
+                tempCanvas.width = barkTexture.width * scaleX;
+                tempCanvas.height = barkTexture.height * scaleY;
+                
+                // Draw the scaled texture to the temp canvas
+                tempCtx.drawImage(
+                    barkTexture, 
+                    0, 0, 
+                    barkTexture.width, barkTexture.height, 
+                    0, 0, 
+                    tempCanvas.width, tempCanvas.height
+                );
+                
+                // Create the pattern from the scaled texture
+                barkPattern = ctx.createPattern(tempCanvas, 'repeat');
+                
+                // Apply pattern to the clipped path
+                ctx.fillStyle = barkPattern;
+                ctx.fill();
+            } else {
+                // Fallback: Create trunk gradient if texture isn't loaded
+                const gradient = ctx.createLinearGradient(
+                    palmTree.trunkX - palmTree.trunkWidth/2, 0, 
+                    palmTree.trunkX + palmTree.trunkWidth/2, 0
+                );
+                gradient.addColorStop(0, '#5D4037'); // Dark brown
+                gradient.addColorStop(0.5, '#8B4513'); // Saddle brown
+                gradient.addColorStop(1, '#5D4037'); // Dark brown
+                
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                // Add some basic texture as fallback
+                ctx.strokeStyle = '#3E2723';
+                ctx.lineWidth = 1;
+                
+                // Clip first to constrain strokes to trunk shape
+                ctx.clip();
+                
+                // Horizontal lines for texture
+                for (let i = 0; i < 10; i++) {
+                    const y = palmTree.trunkY - (i * palmTree.trunkHeight / 10);
+                    const offsetX = Math.sin(i * 0.5) * palmTree.trunkWidth;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(palmTree.trunkX - palmTree.trunkWidth/2 + offsetX, y);
+                    ctx.lineTo(palmTree.trunkX + palmTree.trunkWidth/2 + offsetX, y);
+                    ctx.stroke();
+                }
+            }
+            
+            ctx.restore(); // Restore the context state
+        }
+        
+        // Draw palm tree leaves
+        function drawLeaves(time) {
+            const leafCount = 8;
+            const leafLength = canvas.height * 0.25;
+            
+            for (let i = 0; i < leafCount; i++) {
+                const baseAngle = (i / leafCount) * Math.PI * 2;
+                // Enhanced wind effect for more dramatic movement
+                // Different frequencies for each leaf and stronger amplitude
+                const windEffect = Math.sin(time * 2 + i * 0.7) * 0.3;
+                // Add an extra secondary motion
+                const secondaryWind = Math.cos(time * 3 + i * 0.5) * 0.1;
+                const angle = baseAngle + windEffect + secondaryWind;
+                
+                // Save the current transformation state
+                ctx.save();
+                
+                // Move to the trunk tip
+                ctx.translate(palmTree.tipX, palmTree.tipY);
+                
+                // Rotate according to the leaf position + enhanced wind
+                ctx.rotate(angle);
+                
+                // Draw leaf
+                ctx.beginPath();
+                
+                // Leaf shape as a curved form
+                ctx.moveTo(0, 0);
+                ctx.bezierCurveTo(
+                    leafLength * 0.4, -leafLength * 0.1,
+                    leafLength * 0.8, -leafLength * 0.05,
+                    leafLength, 0
+                );
+                ctx.bezierCurveTo(
+                    leafLength * 0.8, leafLength * 0.05,
+                    leafLength * 0.4, leafLength * 0.1,
+                    0, 0
+                );
+                
+                // Check if this leaf is mostly on the right side (dusk)
+                // Determine if leaf is pointing mostly to the right
+                const isRightSide = Math.cos(angle) > 0;
+                
+                // Leaf gradient with different colors based on side
+                const gradient = ctx.createLinearGradient(0, 0, leafLength, 0);
+                
+                if (isRightSide) {
+                    // Dusk lighting - warmer, orange-tinted leaves
+                    gradient.addColorStop(0, '#33691E'); // Dark green at base
+                    gradient.addColorStop(0.7, '#556B2F'); // Olive green
+                    gradient.addColorStop(1, '#6B8E23'); // Yellowish green at tip
+                } else {
+                    // Normal daytime lighting
+                    gradient.addColorStop(0, '#33691E'); // Dark green at base
+                    gradient.addColorStop(1, '#7CB342'); // Lighter green at tip
+                }
+                
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                // Add a leaf midrib (center vein)
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(leafLength, 0);
+                ctx.strokeStyle = isRightSide ? '#2E5C1E' : '#33691E';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                // Restore the previous transformation state
+                ctx.restore();
+            }
+        }
+        
+        // Draw clouds on the sunny side
+        function drawClouds() {
+            // Only proceed if we have clouds
+            if (clouds.length === 0) return;
+            
+            if (!cloudsTexture.complete || cloudsTexture.naturalWidth === 0) {
+                // If cloud texture isn't loaded yet, draw simple cloud shapes as fallback
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                
+                for (const cloud of clouds) {
+                    // Update cloud position
+                    cloud.x += cloud.speed;
+                    
+                    // If cloud moves off screen, reset to the left
+                    if (cloud.x > canvas.width * 0.5) {
+                        cloud.x = -cloud.width;
+                        cloud.y = Math.random() * (canvas.height * 0.4); // Random new height
+                    }
+                    
+                    // Draw a simple cloud shape
+                    const radius = cloud.height / 2;
+                    
+                    // Draw a series of circles for a cloud-like shape
+                    for (let i = 0; i < 5; i++) {
+                        const offsetX = (i / 4) * cloud.width;
+                        const offsetY = Math.sin(i * 0.8) * radius * 0.5;
+                        const cloudRadius = radius * (0.7 + Math.sin(i) * 0.3);
+                        
+                        ctx.beginPath();
+                        ctx.arc(cloud.x + offsetX, cloud.y + offsetY, cloudRadius, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            } else {
+                // Use the cloud texture
+                for (const cloud of clouds) {
+                    // Update cloud position
+                    cloud.x += cloud.speed;
+                    
+                    // If cloud moves off screen, reset to the left
+                    if (cloud.x > canvas.width * 0.5) {
+                        cloud.x = -cloud.width;
+                        cloud.y = Math.random() * (canvas.height * 0.4); // Random new height
+                    }
+                    
+                    // Ensure clouds stay only on the sunny side with a clip
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(0, 0, canvas.width * 0.5, canvas.height);
+                    ctx.clip();
+                    
+                    // Draw the cloud
+                    ctx.drawImage(
+                        cloudsTexture,
+                        cloud.x, cloud.y,
+                        cloud.width, cloud.height
+                    );
+                    
+                    ctx.restore();
+                }
+            }
+        }
+        
+        // Draw static stars in the dusk sky
+        function drawStars() {
+            // Only draw stars on the right half of the canvas
+            const startX = canvas.width * 0.5;
+            const endX = canvas.width;
+            // Only draw stars in the top 40% of the sky
+            const endY = canvas.height * 0.4;
+            
+            // Create stars with different sizes
+            ctx.fillStyle = 'white';
+            
+            // Set a fixed number of stars based on canvas size
+            const starCount = Math.floor((canvas.width * canvas.height) * 0.0001);
+            
+            // Use a deterministic approach for star positions so they don't change each frame
+            for (let i = 0; i < starCount; i++) {
+                // Fixed position stars - not dependent on animation frame
+                // Using prime numbers and modulo for pseudo-random but deterministic positions
+                const randomX = (i * 17 % 100) / 100; // Distribute evenly but with some variation
+                const randomY = (i * 23 % 100) / 100; // Different prime numbers for variation
+                
+                const x = startX + randomX * (endX - startX);
+                const y = randomY * endY;
+                
+                // Size variation (smaller stars are more common)
+                const sizeRandom = (i * 13 % 100) / 100;
+                const size = sizeRandom < 0.8 ? 
+                    ((i * 7 % 100) / 100) * 1 + 0.5 :  // 80% small stars
+                    ((i * 11 % 100) / 100) * 1.5 + 1;  // 20% larger stars
+                
+                // Draw the star
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // Draw falling raindrops
+        function drawRain(time) {
+            // Change rain color to be slightly orange-tinted for the dusk scene
+            ctx.strokeStyle = 'rgba(225, 230, 240, 0.6)';
+            ctx.lineCap = 'round';
+            
+            raindrops.forEach(drop => {
+                ctx.lineWidth = drop.thickness;
+                ctx.beginPath();
+                ctx.moveTo(drop.x, drop.y);
+                ctx.lineTo(drop.x, drop.y + drop.length);
+                ctx.stroke();
+                
+                // Move raindrop for next frame
+                drop.y += drop.speed;
+                
+                // Reset raindrop to top when it reaches bottom
+                if (drop.y > canvas.height) {
+                    drop.y = -drop.length;
+                    drop.x = Math.random() * (canvas.width * 0.5) + (canvas.width * 0.5); // Keep on right side
+                }
+            });
+        }
+        
+        // Create a simple raindrop splash effect
+        function drawRainSplashes() {
+            // Change splash color to match the rain in dusk lighting
+            ctx.fillStyle = 'rgba(225, 230, 240, 0.4)';
+            
+            // Draw few splashes on the ground
+            for (let i = 0; i < 20; i++) {
+                const x = Math.random() * (canvas.width * 0.5) + (canvas.width * 0.5);
+                
+                // Find the y-position for this x-coordinate along the dune line
+                let y = canvas.height * 0.9; // Default ground level
+                
+                // Find the relevant dune segment
+                for (let j = 0; j < sandDunes.length - 1; j++) {
+                    if (x >= sandDunes[j].x && x <= sandDunes[j+1].x) {
+                        // Interpolate
+                        const ratio = (x - sandDunes[j].x) / (sandDunes[j+1].x - sandDunes[j].x);
+                        y = sandDunes[j].y + ratio * (sandDunes[j+1].y - sandDunes[j].y);
+                        // Add a small random offset
+                        y += Math.random() * (canvas.height * 0.05);
+                        break;
+                    }
+                }
+                
+                const radius = Math.random() * 3 + 1;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Main animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update time (slowed down slightly for better performance)
+            time += 0.008;
+            
+            // Draw scene elements
+            drawSky();
+            drawStars();
+            drawOptimizedSun(time);
+            drawClouds();
+            drawGround();
+            drawTrunk();
+            drawLeaves(time);
+            drawRain(time);
+            drawRainSplashes();
+        }
+        
+        // Setup texture loading
+        barkTexture.onerror = function() {
+            // Redraw the scene with fallback
+            requestAnimationFrame(animate);
+        };
+        
+        sandTexture.onerror = function() {
+            // Redraw the scene with fallback
+            requestAnimationFrame(animate);
+        };
+        
+        cloudsTexture.onerror = function() {
+            console.log("Cloud texture failed to load, using fallback");
+            // Redraw the scene with fallback
+            requestAnimationFrame(animate);
+        };
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            initScene();
+        });
+        
+        // Initialize and start animation
+        initScene();
+        animate();
+    </script>
+</body>
+</html>
