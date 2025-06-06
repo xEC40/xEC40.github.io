@@ -26,12 +26,10 @@
 
     <div id="sayingz">&nbsp;<br>&nbsp;</div><br><br>
     <div id=content>
-            <p>Welcome. I'm just a nerd guy that likes to keep up with the latest in science, technology, and general human innovation.<br><br>
-            I'm also a hobbyist computer programmer that is currently looking for a full-time Programming position.<br> I'm interested in practical Machine Learning and efficient/secure software.<br>
+            <p>Welcome. I'm a computer programmer that also likes to keep up with general human innovation.<br><br>
+            <br> I'm interested in practical Machine Learning and efficient/secure software.<br>
             <br>
-            <b>Purpose of this site:</b> an introduction to <a href="https://e-say.in/about">me</a> and a place where i write articles that make technology and learning less daunting; by showing the perspective of an average regular guy that just started learning one day.  <br>
             <br>
-            <br><em>but above all, i am a small human, here to find out what "here" means. &nbsp; &nbsp; &nbsp; </em><sub>- Albert (the cat)</sub><br><br></p>
             <p>If you want to reach out to me - you can do it via:</p>
         <ul>
             <li style="color: #FF0000;">GitHub - <a style="color: #FF0000;" href=https://github.com/xEC40>https://github.com/xEC40</a></li>
@@ -215,8 +213,11 @@
     </script>
    <script>
    (function() {
+    const say_first = [
+            "bits and bytes fanboy"
+        ];
+    
     const phrases = [
-            "bits and bytes fanboy",
             "pee + poopoo",
             "powered by curiosity",
             "latent space observer",
@@ -264,6 +265,9 @@
     let particles = [];
     let animStartTime = null;
     let currentPhraseIndex = -1;
+    let sayFirstIndex = 0;
+    let inSayFirstPhase = true;
+    let usedRandomIndices = [];
     let animating = false;
     let animationFrameId = null;
     let needsResize = true;
@@ -538,8 +542,42 @@
             return;
         }
 
-        currentPhraseIndex = (currentPhraseIndex + 1) % phrases.length;
-        const text = phrases[currentPhraseIndex];
+        let text;
+        
+        if (inSayFirstPhase) {
+            if (sayFirstIndex < say_first.length) {
+                text = say_first[sayFirstIndex];
+                sayFirstIndex++;
+            } else {
+                // Switch to random phrases phase
+                inSayFirstPhase = false;
+                usedRandomIndices = [];
+                // Get first random phrase
+                if (usedRandomIndices.length >= phrases.length) {
+                    usedRandomIndices = [];
+                }
+                let randomIndex;
+                do {
+                    randomIndex = Math.floor(Math.random() * phrases.length);
+                } while (usedRandomIndices.includes(randomIndex) && usedRandomIndices.length < phrases.length);
+                
+                usedRandomIndices.push(randomIndex);
+                text = phrases[randomIndex];
+            }
+        } else {
+            // Random phrases phase
+            if (usedRandomIndices.length >= phrases.length) {
+                usedRandomIndices = [];
+            }
+            let randomIndex;
+            do {
+                randomIndex = Math.floor(Math.random() * phrases.length);
+            } while (usedRandomIndices.includes(randomIndex) && usedRandomIndices.length < phrases.length);
+            
+            usedRandomIndices.push(randomIndex);
+            text = phrases[randomIndex];
+        }
+        
         console.log("Morphing to:", text);
         const newTargets = generateTextTargets(text);
 
