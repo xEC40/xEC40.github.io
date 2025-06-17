@@ -3,31 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sorting Vizzzez</title>
+    <title>Algorithm Vizzzez</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <div id="barsContainer" class="bars-container"></div>
-        <canvas id="canvas"></canvas>
+    <!-- Main Menu View -->
+    <div id="mainMenu" class="main-menu">
+        <div class="menu-header">
+            <h1>Algorithm Vizzzez</h1>
+            <p>Interactive visualizations of algorithms and data structures</p>
+        </div>
+        
+        <div class="menu-grid">
+            <div class="menu-item" data-visualization="bubble-sort">
+                <div class="menu-icon">🔵</div>
+                <h3>Bubble Sort</h3>
+                <p>Watch as elements bubble up to their correct positions</p>
+                <div class="menu-status">Available</div>
+            </div>
+            
+            <div class="menu-item coming-soon" data-visualization="quick-sort">
+                <div class="menu-icon">⚡</div>
+                <h3>Quick Sort</h3>
+                <p>Divide and conquer sorting algorithm</p>
+                <div class="menu-status">Coming Soon</div>
+            </div>
+            
+            <div class="menu-item coming-soon" data-visualization="merge-sort">
+                <div class="menu-icon">🔀</div>
+                <h3>Merge Sort</h3>
+                <p>Stable divide and conquer sorting</p>
+                <div class="menu-status">Coming Soon</div>
+            </div>
+            
+            <div class="menu-item coming-soon" data-visualization="binary-search">
+                <div class="menu-icon">🔍</div>
+                <h3>Binary Search</h3>
+                <p>Efficient searching in sorted arrays</p>
+                <div class="menu-status">Coming Soon</div>
+            </div>
+            
+            <div class="menu-item coming-soon" data-visualization="dijkstra">
+                <div class="menu-icon">🗺️</div>
+                <h3>Dijkstra's Algorithm</h3>
+                <p>Shortest path finding algorithm</p>
+                <div class="menu-status">Coming Soon</div>
+            </div>
+            
+            <div class="menu-item coming-soon" data-visualization="bfs">
+                <div class="menu-icon">🌊</div>
+                <h3>Breadth-First Search</h3>
+                <p>Graph traversal algorithm</p>
+                <div class="menu-status">Coming Soon</div>
+            </div>
+        </div>
     </div>
-    
-    <div class="controls">
-        <div class="control-group">
-            <label>Bars</label>
-            <input type="range" id="numBars" min="10" max="150" value="50">
-            <span id="numBarsValue">50</span>
+
+    <!-- Bubble Sort Visualization View -->
+    <div id="bubbleSortView" class="visualization-view" style="display: none;">
+        <div class="view-header">
+            <button id="backToMenu" class="back-button">← Back to Menu</button>
+            <h2>Bubble Sort Visualization</h2>
         </div>
-        <div class="control-group">
-            <button id="reset">Reset</button>
-            <button id="playPause">▶ Play</button>
+        
+        <div class="container">
+            <div id="barsContainer" class="bars-container"></div>
+            <canvas id="canvas"></canvas>
         </div>
-        <div class="control-group">
-            <label>Speed</label>
-            <input type="range" id="speed" min="1" max="200" value="100">
-            <span id="speedValue">100</span>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Bars</label>
+                <input type="range" id="numBars" min="4" max="60" value="50">
+                <span id="numBarsValue">10</span>
+            </div>
+            <div class="control-group">
+                <button id="reset">Reset</button>
+                <button id="playPause">▶ Play</button>
+            </div>
+            <div class="control-group">
+                <label>Speed</label>
+                <input type="range" id="speed" min="1" max="200" value="100">
+                <span id="speedValue">100</span>
+            </div>
         </div>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>

@@ -1,3 +1,77 @@
+// Navigation System
+const mainMenu = document.getElementById('mainMenu');
+const bubbleSortView = document.getElementById('bubbleSortView');
+const backToMenuBtn = document.getElementById('backToMenu');
+const menuItems = document.querySelectorAll('.menu-item');
+
+// View management
+function showView(viewName) {
+    // Hide all views
+    mainMenu.style.display = 'none';
+    bubbleSortView.style.display = 'none';
+    
+    // Show requested view
+    switch(viewName) {
+        case 'menu':
+            mainMenu.style.display = 'flex';
+            // Stop any running animations when going back to menu
+            if (isSorting) {
+                isSorting = false;
+                if (sortGenerator) sortGenerator = null;
+            }
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            if (borderAnimationId) {
+                clearTimeout(borderAnimationId);
+                borderAnimationId = null;
+            }
+            break;
+        case 'bubble-sort':
+            bubbleSortView.style.display = 'flex';
+            // Initialize bubble sort when entering the view
+            setTimeout(() => {
+                initializeBubbleSort();
+            }, 100);
+            break;
+    }
+}
+
+// Menu item click handlers
+menuItems.forEach(item => {
+    item.addEventListener('click', () => {
+        if (item.classList.contains('coming-soon')) {
+            return; // Do nothing for coming soon items
+        }
+        
+        const visualization = item.dataset.visualization;
+        showView(visualization);
+    });
+});
+
+// Back to menu button
+backToMenuBtn.addEventListener('click', () => {
+    showView('menu');
+});
+
+// Initialize bubble sort visualization
+function initializeBubbleSort() {
+    // Setup resize observer
+    if (typeof resizeObserver === 'undefined') {
+        window.resizeObserver = new ResizeObserver(entries => {
+            const barsContainerRect = barsContainer.getBoundingClientRect();
+            canvas.width = barsContainerRect.width;
+            canvas.height = barsContainerRect.height;
+        });
+        resizeObserver.observe(barsContainer);
+    }
+    
+    generateBars();
+    drawParticles();
+    animateBorders();
+}
+
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const barsContainer = document.getElementById('barsContainer');
@@ -24,14 +98,6 @@ const MAX_SPEED = 1.5; // Reduced speed for less intensive calculations
 const FRAME_TIME = 1000 / 60;
 const MAX_VALUE = 1000; // Maximum value for the bars
 const RAINBOW_SPEED = .5; // Speed of rainbow color cycling - increased for more vibrant effect
-
-// Setup resize observer
-const resizeObserver = new ResizeObserver(entries => {
-    const barsContainerRect = barsContainer.getBoundingClientRect();
-    canvas.width = barsContainerRect.width;
-    canvas.height = barsContainerRect.height;
-});
-resizeObserver.observe(barsContainer);
 
 // Debounce function for expensive operations
 function debounce(func, wait) {
@@ -581,7 +647,5 @@ function animateBorders() {
     borderAnimationId = setTimeout(animateBorders, 100);
 }
 
-// init
-generateBars();
-drawParticles();
-animateBorders(); // Start the border animation
+// Initialize application - start with menu
+showView('menu');
