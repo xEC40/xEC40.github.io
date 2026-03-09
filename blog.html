@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang=en>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="color-scheme" content="light only">
+    <title>home page</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="shortcut icon" href=favicon.ico>
+
+
+</head>
+<body>
+  <nav><a href="/"> <canvas id="logoCanvas" width="70" height="70"></canvas></a>
+    <header>
+      <ul>
+          <li><a href=about/>about</a></li>
+          <li><a href=posts/>posts</a></li>
+          <li><a href=projects/>projects</li>
+          <li><a href=https://twitter.com/x3c49 rel=me>@me</a></li>
+          <li><a href=https://github.com/x3c49 rel=me><img src="assets/gh.png" width="20px" height="20px"></a></li>
+      </ul>
+    </nav>
+    </header>
+
+    <div id=content>
+
+        <p>&nbsp;&nbsp;&nbsp;Hello, I&rsquo;m <a href="about/">x3c49</a>. I think computer is cool.
+        <h1><a href="posts/PackageManagerIntro/">you need a degree in Computer-Science to install apps on Linux</a></h1>
+        <p>and more sh#t they tell you to keep you <em>afraid</em> of learning about computers. (<a href="posts/PackageManagerIntro/">10 min read</a>)</p>
+        <h1><a href=posts/Virus/>A Virus? Those Still Exist??</a></h1>
+        <p>Demystifying what a "Virus" is. (Hint: It's <b>not magic</b>) (<a href=posts/Virus/>7 min slideshow</a>) </p>
+        <h1><a href=posts/Mediocrity/>Mediocrity</a></h1>
+        <p>Welcome to my personal site, this is my first post. These will improve in quality as time goes on. (<a href=posts/Mediocrity/>2 min read</a>)</p>
+        <a href=posts/>All posts</a>
+        
+        <footer>
+          <p>&copy;2023&ndash;2025&nbsp; &#183;&nbsp;
+              <a class=h-card rel=me href=https://e-say.in>home</a> &#183;&nbsp;
+              <a href=https://twitter.com/x3c49 rel=me>twitter</a> &#183;&nbsp;
+              <a href=https://e-say.in/projects rel=me>Projects!</a> &#183;&nbsp;
+              <a href=mailto:mail@e-say.in rel=me>mail@e-say.in [EMail Inbox]&nbsp;</a>;&nbsp;
+      </footer>
+
+      </div>
+      <script>
+        (function() {
+    const canvas = document.getElementById('logoCanvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    let animationStartTime = null;
+    const INTRO_DURATION = 500; // 500ms intro animation
+    function resize() {
+        width = canvas.width = 100;
+        height = canvas.height = 100;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+    // Constants for the animation
+    const sphereStep = 10 * Math.PI / 180;
+    const ringCount = 400;
+    const sphereRadius = 15;
+    const ringRadius = 43;
+    const ringTiltAngle = 6 * Math.PI / 180;
+    const bgColor = 'black';
+    const pointSize = .7;
+    let spherePoints = [];
+    let ringPoints = [];
+    let t = 0;
+    let sphereRotation = 0;
+    let ringRotation = 0;
+    let ringTiltDirection = 1;
+    let isIntroPlaying = true;
+    const sinTilt = Math.sin(ringTiltAngle * ringTiltDirection);
+    const cosTilt = Math.cos(ringTiltAngle * ringTiltDirection);
+
+    function random(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+
+    function normalize(x, y, z) {
+        const mag = Math.sqrt(x * x + y * y + z * z);
+        return {
+            x: x / mag,
+            y: y / mag,
+            z: z / mag
+        };
+    }
+
+    function mapValue(value, inMin, inMax, outMin, outMax) {
+        return ((value - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin;
+    }
+
+    function easeOutElastic(x) {
+        const c4 = (2 * Math.PI) / 3;
+        return x === 0 ? 0 : x === 1 ? 1 : Math.pow(2, -10 * x) * Math.sin((x * 10 - 0.75) * c4) + 1;
+    }
+
+    function easeOutBack(x) {
+        const c1 = 1.70158;
+        const c3 = c1 + 1;
+        return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+    }
+
+    function initSpherePoints() {
+        for(let theta = 0; theta < Math.PI; theta += sphereStep) {
+            for(let phi = 0; phi < 2 * Math.PI; phi += sphereStep) {
+                const sinTheta = Math.sin(theta);
+                const x = sphereRadius * sinTheta * Math.cos(phi);
+                const y = sphereRadius * sinTheta * Math.sin(phi);
+                const z = sphereRadius * Math.cos(theta);
+                const angleOffset = random(0, 2 * Math.PI);
+                const speed = random(0.5, 1.5);
+                // Add initial offset for intro animation
+                const initialOffset = random(0, 2 * Math.PI);
+                spherePoints.push({
+                    x,
+                    y,
+                    z,
+                    angleOffset,
+                    speed,
+                    initialOffset,
+                    initialDistance: random(0.8, 1.2) // Slight variation in initial distance
+                });
+            }
+        }
+    }
+
+    function initRingPoints() {
+        for(let i = 0; i < ringCount; i++) {
+            const angle = (i / ringCount) * 2 * Math.PI;
+            const x = ringRadius * Math.cos(angle);
+            const z = ringRadius * Math.sin(angle);
+            const angleOffset = random(0, 2 * Math.PI);
+            const speed = random(0.5, 1.5);
+            // Add initial offset for intro animation
+            const initialOffset = random(0, 2 * Math.PI);
+            ringPoints.push({
+                x,
+                z,
+                angleOffset,
+                speed,
+                initialOffset,
+                initialDistance: random(0.8, 1.2) // Slight variation in initial distance
+            });
+        }
+    }
+
+    function drawPoint(x, y, alpha, size) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(x, y, size || pointSize, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+
+    function renderIntro(progress) {
+        // Use different easing for different elements for a more dynamic feel
+        const sphereProgress = easeOutElastic(progress);
+        const ringProgress = easeOutBack(Math.min(1, progress * 1.2)); // Ring appears slightly faster
+        // Start with a glowing dot
+        const initialGlow = Math.max(0, 1 - progress * 3); // Fades out quickly
+        const initialSize = 2 + initialGlow * 8;
+        const initialAlpha = 0.7 + initialGlow * 0.3;
+        if(initialGlow > 0) {
+            // Draw the initial pulsing dot
+            drawPoint(0, 0, initialAlpha, initialSize);
+            // Add some particles emanating from the center
+            const particleCount = 6;
+            for(let i = 0; i < particleCount; i++) {
+                const angle = (i / particleCount) * Math.PI * 2;
+                const dist = initialGlow * 25;
+                const x = Math.cos(angle) * dist;
+                const y = Math.sin(angle) * dist;
+                const particleAlpha = initialAlpha * (1 - initialGlow);
+                const particleSize = initialSize * 0.3 * (1 - initialGlow);
+                drawPoint(x, y, particleAlpha, particleSize);
+            }
+        }
+        // Sphere emerges from center
+        const sphereScale = sphereProgress;
+        const sphereAlpha = progress * 0.8;
+        const sphereRotCos = Math.cos(sphereRotation * sphereProgress);
+        const sphereRotSin = Math.sin(sphereRotation * sphereProgress);
+        for(let i = 0; i < spherePoints.length; i++) {
+            const p = spherePoints[i];
+            // During intro, points come from random directions toward their final position
+            const introFactor = 1 - sphereProgress;
+            const introAngle = p.initialOffset + progress * 5;
+            // Calculate base position with oscillation
+            const angle = p.angleOffset + t * 0.01 * p.speed * sphereProgress;
+            const oscillation = 5 * Math.sin(angle) * sphereProgress;
+            const norm = normalize(p.x, p.y, p.z);
+            let x = p.x + norm.x * oscillation;
+            let y = p.y + norm.y * oscillation;
+            let z = p.z + norm.z * oscillation;
+            // Apply intro animation - points emerge from center
+            if(introFactor > 0) {
+                const emergeDist = 30 * introFactor * p.initialDistance;
+                x = x * sphereScale + Math.cos(introAngle) * emergeDist * introFactor;
+                y = y * sphereScale + Math.sin(introAngle) * emergeDist * introFactor;
+                z = z * sphereScale;
+            }
+            const rotatedX = x * sphereRotCos - z * sphereRotSin;
+            const rotatedZ = x * sphereRotSin + z * sphereRotCos;
+            const scaleFactor = mapValue(rotatedZ, -sphereRadius - 20, sphereRadius + 20, 0.5, 1.5) * sphereScale;
+            const finalX = rotatedX * scaleFactor;
+            const finalY = y * scaleFactor;
+            const pointAlpha = sphereAlpha * (0.5 + 0.5 * sphereProgress);
+            drawPoint(finalX, finalY, pointAlpha);
+        }
+        // Ring appears slightly after sphere
+        if(ringProgress > 0) {
+            const ringScale = ringProgress;
+            const ringAlpha = ringProgress * 0.7;
+            const ringRotCos = Math.cos(ringRotation * ringProgress);
+            const ringRotSin = Math.sin(ringRotation * ringProgress);
+            for(let i = 0; i < ringPoints.length; i++) {
+                const p = ringPoints[i];
+                // During intro, ring points spiral in from outside
+                const introFactor = 1 - ringProgress;
+                const introAngle = p.initialOffset + progress * 8;
+                let x = p.x;
+                let z = p.z;
+                // Apply intro animation - ring forms from particles spiraling inward
+                if(introFactor > 0) {
+                    const emergeDistFactor = 1 + introFactor * 3 * p.initialDistance;
+                    const angleOffset = introFactor * 5;
+                    x = x * emergeDistFactor * ringScale;
+                    z = z * emergeDistFactor * ringScale;
+                    // Add spiral effect
+                    const spiralX = Math.cos(introAngle + angleOffset) * 40 * introFactor;
+                    const spiralZ = Math.sin(introAngle + angleOffset) * 40 * introFactor;
+                    x += spiralX;
+                    z += spiralZ;
+                }
+                let rotatedX = x * ringRotCos + z * ringRotSin;
+                let rotatedZ = x * ringRotSin - z * ringRotCos;
+                let y = rotatedZ * sinTilt * ringScale;
+                rotatedZ *= cosTilt;
+                // Only apply oscillation when the ring is mostly formed
+                if(ringProgress > 0.7) {
+                    const oscillationStrength = (ringProgress - 0.7) / 0.3; // 0 to 1
+                    const angle = p.angleOffset + t * 0.01 * p.speed * oscillationStrength;
+                    const oscillation = 2 * Math.sin(angle) * oscillationStrength;
+                    const oscX = -y * oscillation;
+                    const oscY = oscillation;
+                    rotatedX += oscX;
+                    y -= oscY;
+                }
+                const scaleFactor = mapValue(rotatedZ, -ringRadius - 20, ringRadius + 20, 0.5, 1.5) * ringScale;
+                const finalX = rotatedX * scaleFactor;
+                const finalY = y * scaleFactor;
+                drawPoint(finalX, finalY, ringAlpha);
+            }
+        }
+    }
+
+    function renderFullAnimation() {
+        const dynamicAlpha = 150 + 50 * Math.sin(t / 50);
+        const alpha = Math.min(Math.max(dynamicAlpha, 0), 255);
+        const sphereRotCos = Math.cos(sphereRotation);
+        const sphereRotSin = Math.sin(sphereRotation);
+        for(let i = 0; i < spherePoints.length; i++) {
+            const p = spherePoints[i];
+            const angle = p.angleOffset + t * 0.01 * p.speed;
+            const oscillation = 5 * Math.sin(angle);
+            const norm = normalize(p.x, p.y, p.z);
+            let x = p.x + norm.x * oscillation;
+            let y = p.y + norm.y * oscillation;
+            let z = p.z + norm.z * oscillation;
+            const rotatedX = x * sphereRotCos - z * sphereRotSin;
+            const rotatedZ = x * sphereRotSin + z * sphereRotCos;
+            const scaleFactor = mapValue(rotatedZ, -sphereRadius - 20, sphereRadius + 20, 0.5, 1.5);
+            const finalX = rotatedX * scaleFactor;
+            const finalY = y * scaleFactor;
+            drawPoint(finalX, finalY, alpha);
+        }
+        const ringRotCos = Math.cos(ringRotation);
+        const ringRotSin = Math.sin(ringRotation);
+        for(let i = 0; i < ringPoints.length; i++) {
+            const p = ringPoints[i];
+            let rotatedX = p.x * ringRotCos + p.z * ringRotSin;
+            let rotatedZ = p.x * ringRotSin - p.z * ringRotCos;
+            let y = rotatedZ * sinTilt;
+            rotatedZ *= cosTilt;
+            const angle = p.angleOffset + t * 0.01 * p.speed;
+            const oscillation = 2 * Math.sin(angle);
+            const oscX = -y * oscillation;
+            const oscY = oscillation;
+            rotatedX += oscX;
+            y -= oscY;
+            const scaleFactor = mapValue(rotatedZ, -ringRadius - 20, ringRadius + 20, 0.5, 1.5);
+            const finalX = rotatedX * scaleFactor;
+            const finalY = y * scaleFactor;
+            drawPoint(finalX, finalY, alpha);
+        }
+    }
+
+    function render(timestamp) {
+        if(!animationStartTime) {
+            animationStartTime = timestamp;
+        }
+        const elapsed = timestamp - animationStartTime;
+        const introProgress = Math.min(1, elapsed / INTRO_DURATION);
+        // Clear canvas with background
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, width, height);
+        // Center the coordinate system
+        ctx.save();
+        ctx.translate(width / 2, height / 2);
+        if(introProgress < 1) {
+            // Still in intro animation
+            renderIntro(introProgress);
+        } else if(isIntroPlaying) {
+            // Just finished intro
+            isIntroPlaying = false;
+            renderFullAnimation();
+        } else {
+            // Normal animation
+            renderFullAnimation();
+        }
+        ctx.restore();
+        // Update animation parameters
+        t += 1;
+        sphereRotation += 0.3 * Math.PI / 180;
+        ringRotation += 2 * Math.PI / 180;
+        requestAnimationFrame(render);
+    }
+
+    function init() {
+        initSpherePoints();
+        initRingPoints();
+        requestAnimationFrame(render);
+    }
+
+    init();
+    canvas.style.cursor = 'pointer';
+})();
+
+    </script>
+</body>
+</html>
