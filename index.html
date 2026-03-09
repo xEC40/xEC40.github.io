@@ -752,9 +752,151 @@ body {
   border-right: 1px solid var(--motif-top-shadow);
   white-space: nowrap;
 }
+/* ===== Warning Dialogs ===== */
+.irix-dialog-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.45);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.irix-dialog-overlay.hidden { display: none; }
+.irix-dialog {
+  background: var(--motif-bg);
+  border-top: 2px solid var(--motif-top-shadow);
+  border-left: 2px solid var(--motif-top-shadow);
+  border-bottom: 2px solid var(--motif-bottom-shadow);
+  border-right: 2px solid var(--motif-bottom-shadow);
+  box-shadow: 4px 4px 12px rgba(0,0,0,0.5);
+  min-width: 300px;
+  max-width: 460px;
+  font-family: 'Helvetica', 'Arial', sans-serif;
+  font-size: 12px;
+  user-select: none;
+}
+.irix-dialog-titlebar {
+  height: 24px;
+  background: linear-gradient(180deg, var(--titlebar-active-light) 0%, var(--titlebar-active) 40%, var(--titlebar-active-dark) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--motif-bottom-shadow);
+}
+.irix-dialog-titlebar span {
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+}
+.irix-dialog-body {
+  display: flex;
+  gap: 14px;
+  padding: 18px 20px 14px 20px;
+  align-items: flex-start;
+}
+.irix-dialog-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+}
+.irix-dialog-text {
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #000;
+}
+.irix-dialog-text strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+.irix-dialog-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 20px 16px 20px;
+}
+.irix-dialog-btn {
+  height: 24px;
+  min-width: 80px;
+  padding: 0 16px;
+  background: var(--motif-bg);
+  border-top: 2px solid var(--motif-top-shadow);
+  border-left: 2px solid var(--motif-top-shadow);
+  border-bottom: 2px solid var(--motif-bottom-shadow);
+  border-right: 2px solid var(--motif-bottom-shadow);
+  font-size: 12px;
+  font-family: 'Helvetica', 'Arial', sans-serif;
+  cursor: pointer;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.irix-dialog-btn:active {
+  border-top: 2px solid var(--motif-bottom-shadow);
+  border-left: 2px solid var(--motif-bottom-shadow);
+  border-bottom: 2px solid var(--motif-top-shadow);
+  border-right: 2px solid var(--motif-top-shadow);
+  background: var(--motif-select);
+}
+.irix-dialog-btn-primary {
+  outline: 2px solid #000;
+  outline-offset: -4px;
+}
 </style>
 </head>
 <body>
+<!-- Mobile Warning Dialog -->
+<div class="irix-dialog-overlay hidden" id="mobile-warning">
+  <div class="irix-dialog">
+    <div class="irix-dialog-titlebar"><span>System Notice</span></div>
+    <div class="irix-dialog-body">
+      <div class="irix-dialog-icon">
+        <svg viewBox="0 0 36 36" width="36" height="36">
+          <polygon points="18,2 34,32 2,32" fill="#cccc22" stroke="#888" stroke-width="1.5"/>
+          <text x="18" y="27" text-anchor="middle" font-family="Helvetica,Arial" font-size="20" font-weight="bold" fill="#000">!</text>
+        </svg>
+      </div>
+      <div class="irix-dialog-text">
+        <strong>Unsupported Display Configuration</strong>
+        This workstation environment requires a minimum display resolution of 800x600 and is not designed for handheld devices.<br><br>
+        For the intended experience, please connect from a desktop or laptop computer.
+      </div>
+    </div>
+    <div class="irix-dialog-actions">
+      <div class="irix-dialog-btn irix-dialog-btn-primary" onclick="document.getElementById('mobile-warning').classList.add('hidden')">Dismiss</div>
+    </div>
+  </div>
+</div>
+
+<!-- Canvas / Privacy Browser Warning Dialog -->
+<div class="irix-dialog-overlay hidden" id="canvas-warning">
+  <div class="irix-dialog">
+    <div class="irix-dialog-titlebar"><span>Graphics Notice</span></div>
+    <div class="irix-dialog-body">
+      <div class="irix-dialog-icon">
+        <svg viewBox="0 0 36 36" width="36" height="36">
+          <circle cx="18" cy="18" r="16" fill="#2255cc" stroke="#888" stroke-width="1.5"/>
+          <text x="18" y="14" text-anchor="middle" font-family="Helvetica,Arial" font-size="16" font-weight="bold" fill="#fff">i</text>
+          <rect x="15.5" y="17" width="5" height="12" rx="1" fill="#fff"/>
+        </svg>
+      </div>
+      <div class="irix-dialog-text">
+        <strong>CRM Graphics: Canvas Data Blocked</strong>
+        Your browser is blocking canvas data extraction, likely due to privacy protection settings (e.g. LibreWolf, Brave, hardened Firefox).<br><br>
+        The desktop background texture may not render correctly. To resolve this, allow canvas access for this site in your browser's privacy settings.
+      </div>
+    </div>
+    <div class="irix-dialog-actions">
+      <div class="irix-dialog-btn irix-dialog-btn-primary" onclick="document.getElementById('canvas-warning').classList.add('hidden')">OK</div>
+    </div>
+  </div>
+</div>
+
 <!-- Boot Splash -->
 <div id="boot-splash">
   <div class="boot-logo">
@@ -774,10 +916,8 @@ body {
   <div class="boot-text" id="boot-text"></div>
 </div>
 
-<!-- Desktop -->
 <div id="desktop" style="display:none;">
   <canvas id="desktop-bg" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;"></canvas>
-  <!-- Toolchest -->
   <div id="toolchest">
     <div class="toolchest-header" id="toolchest-toggle" title="Click to show/hide Toolchest">Toolchest</div>
     <div id="toolchest-items" style="max-height:200px;">
@@ -789,7 +929,6 @@ body {
       <div class="toolchest-btn" data-menu="help-menu"><span>Help</span><span class="toolchest-arrow"></span></div>
     </div>
   </div>
-  <!-- Toolchest Menus -->
   <div class="toolchest-menu" id="desktop-menu">
     <div class="menu-item" onclick="openApp('terminal')">Open Unix Shell</div>
     <div class="menu-item" onclick="openApp('fm')">File Manager</div>
@@ -843,7 +982,6 @@ body {
     <div class="menu-separator"></div>
     <div class="menu-item disabled">Release Notes</div>
   </div>
-  <!-- Desktop Icons -->
   <div id="desktop-icons">
     <div class="desktop-icon" ondblclick="openApp('terminal')">
       <div class="desktop-icon-img">
@@ -923,9 +1061,7 @@ body {
       <span class="desktop-icon-label">Dumpster</span>
     </div>
   </div>
-  <!-- Context Menu -->
   <div id="context-menu"></div>
-  <!-- Polybar -->
   <div id="polybar">
     <div id="polybar-left">
       <div class="polybar-sgi-logo" title="SGI IRIX 6.5" onclick="openApp('about')">
@@ -947,7 +1083,6 @@ body {
   </div>
 </div>
 <script>
-// ========== BOOT SEQUENCE ==========
 const bootMessages = [
   'PROM Monitor SGI Version 6.5','',
   'System Maintenance Menu','',
@@ -993,7 +1128,7 @@ function markBootShown(){try{localStorage.setItem(BOOT_KEY,String(Date.now()));}
 setInterval(saveState,3000);
 window.addEventListener('beforeunload',saveState);
 function showDesktop(restoreWindows){document.getElementById('desktop').style.display='';drawDesktopBackground();updatePolybarClock();if(restoreWindows){const state=loadState();if(state&&state.windows&&Object.keys(state.windows).length>0){const sorted=Object.entries(state.windows).sort((a,b)=>(a[1].zIndex||0)-(b[1].zIndex||0));sorted.forEach(([id,wState])=>{openApp(id);const win=windows[id];if(!win)return;if(!wState.maximized){win.style.left=wState.left;win.style.top=wState.top;win.style.width=wState.width;win.style.height=wState.height;}if(wState.maximized){if(wState.savedPos)win._savedPos=wState.savedPos;if(!win.classList.contains('maximized'))toggleMaximize(win);}if(wState.minimized)minimizeWindow(win);});if(state.activeWinId&&windows[state.activeWinId]){const aw=windows[state.activeWinId];if(!aw.classList.contains('minimized'))bringToFront(aw);}}else{openDefaultApps();}}else{setTimeout(openDefaultApps,300);}updatePolybar();}
-function openDefaultApps(){openApp('terminal');openApp('osview');openApp('fm');setTimeout(()=>{const termContent=document.getElementById('term-content');const termInput=document.getElementById('term-input');if(termContent&&termInput){const inputLine=termInput.closest('.terminal-input-line');const executedLine=document.createElement('div');executedLine.className='terminal-line';executedLine.textContent=getPrompt()+'vi';inputLine.before(executedLine);termCmdCount++;openViEditor('',termContent,termInput);}},100);setTimeout(()=>{openApp('browser');const blogUrl=new URL('blog.html',window.location.href).href;browserGo(blogUrl);},120);setTimeout(()=>{openApp('about');updatePolybar();},200);}
+function openDefaultApps(){openApp('terminal');openApp('osview');openApp('fm');setTimeout(()=>{const termContent=document.getElementById('term-content');const termInput=document.getElementById('term-input');if(termContent&&termInput){const inputLine=termInput.closest('.terminal-input-line');const executedLine=document.createElement('div');executedLine.className='terminal-line';executedLine.textContent=getPrompt()+'vi';inputLine.before(executedLine);termCmdCount++;openViEditor('',termContent,termInput);}},100);setTimeout(()=>{openApp('browser');const blogUrl=getBlogUrl();browserGo(blogUrl);},120);setTimeout(()=>{openApp('about');updatePolybar();},200);}
 let windowZIndex=100,activeWindow=null;
 const windows={};
 let dragState=null,resizeState=null;
@@ -1082,7 +1217,6 @@ const AVAILABLE_COMMANDS=['ls','cd','pwd','cat','echo','whoami','hostname','id',
 function tabComplete(inputValue){const parts=inputValue.split(/\s+/);if(parts.length<=1){const partial=parts[0]||'';return{matches:AVAILABLE_COMMANDS.filter(c=>c.startsWith(partial)),replaceFrom:0,prefix:''};}const partial=parts[parts.length-1];let dirPath,namePrefix,displayPrefix;let expandedPartial=partial;if(expandedPartial.startsWith('~/'))expandedPartial='/home/guest/'+expandedPartial.slice(2);else if(expandedPartial==='~')expandedPartial='/home/guest';if(expandedPartial.includes('/')){const lastSlash=expandedPartial.lastIndexOf('/');dirPath=expandedPartial.slice(0,lastSlash)||'/';if(!dirPath.startsWith('/'))dirPath=resolvePath(dirPath);namePrefix=expandedPartial.slice(lastSlash+1);displayPrefix=partial.slice(0,partial.lastIndexOf('/')+1);}else{dirPath=cwd;namePrefix=expandedPartial;displayPrefix='';}const node=filesystem[dirPath];if(!node||node.type!=='dir')return{matches:[],replaceFrom:0,prefix:''};const matches=node.children.filter(c=>c.startsWith(namePrefix)).map(c=>{const fullPath=dirPath==='/'?'/'+c:dirPath+'/'+c;return displayPrefix+c+(filesystem[fullPath]?.type==='dir'?'/':'');});const beforeArg=inputValue.slice(0,inputValue.length-partial.length);return{matches,replaceFrom:beforeArg.length,prefix:beforeArg};}
 function openTerminal(){const existing=windows['terminal'];if(existing){if(existing.classList.contains('minimized'))existing.classList.remove('minimized');bringToFront(existing);const inp=existing.querySelector('.terminal-input');if(inp)inp.focus();return;}const termHTML=`<div class="terminal-container" id="term-content" tabindex="0"><div class="terminal-line">IRIX Release 6.5 IP32</div><div class="terminal-line">Copyright 1987-1999 Silicon Graphics, Inc. All Rights Reserved.</div><div class="terminal-line"> </div><div class="terminal-input-line"><span class="terminal-prompt" id="term-prompt">${getPrompt()}</span><input class="terminal-input" id="term-input" type="text" spellcheck="false" autocomplete="off" autofocus></div></div>`;const dw=window.innerWidth,dh=window.innerHeight;const w=Math.min(680,dw-40),h=Math.min(420,dh-40);const win=createWindow('terminal','xwsh',Math.max(120,(dw-w)/2-100),Math.max(50,(dh-h)/2-50),w,h,termHTML);const input=document.getElementById('term-input');const content=document.getElementById('term-content');let historyIdx=-1;content.addEventListener('click',()=>input.focus());input.addEventListener('keydown',(e)=>{if(e.key==='Enter'){const cmd=input.value;commandHistory.push(cmd);historyIdx=-1;const hint=content.querySelector('.terminal-tab-hint');if(hint)hint.remove();const inputLine=input.closest('.terminal-input-line');const executedLine=document.createElement('div');executedLine.className='terminal-line';executedLine.textContent=getPrompt()+cmd;inputLine.before(executedLine);const result=executeCommand(cmd);termCmdCount++;if(result==='\x0C'){content.querySelectorAll('.terminal-line, .terminal-tab-hint').forEach(l=>l.remove());}else if(result&&result.startsWith('\x1BVI_OPEN\x1B')){const fname=result.slice(9);openViEditor(fname,content,input);}else if(result){const outputLine=document.createElement('div');outputLine.className='terminal-line';outputLine.textContent=result;inputLine.before(outputLine);}document.getElementById('term-prompt').textContent=getPrompt();input.value='';content.scrollTop=content.scrollHeight;}else if(e.key==='ArrowUp'){e.preventDefault();if(commandHistory.length>0){if(historyIdx===-1)historyIdx=commandHistory.length;historyIdx=Math.max(0,historyIdx-1);input.value=commandHistory[historyIdx];}}else if(e.key==='ArrowDown'){e.preventDefault();if(historyIdx>=0){historyIdx++;if(historyIdx>=commandHistory.length){historyIdx=-1;input.value='';}else input.value=commandHistory[historyIdx];}}else if(e.key==='Tab'){e.preventDefault();const oldHint=content.querySelector('.terminal-tab-hint');if(oldHint)oldHint.remove();const{matches,replaceFrom,prefix}=tabComplete(input.value);if(matches.length===1){input.value=prefix+matches[0];}else if(matches.length>1){let common=matches[0];for(let i=1;i<matches.length;i++){while(!matches[i].startsWith(common))common=common.slice(0,-1);}if(common.length>(input.value.length-replaceFrom))input.value=prefix+common;const hintEl=document.createElement('div');hintEl.className='terminal-tab-hint';hintEl.textContent=matches.join('  ');input.closest('.terminal-input-line').before(hintEl);content.scrollTop=content.scrollHeight;}}});setTimeout(()=>input.focus(),100);}
 function openViEditor(filename, termContent, termInput){
-  // Resolve path and load content
   let filePath='',displayName=filename||'[No Name]';
   if(filename){
     filePath=filename.startsWith('/')?filename:(filename.startsWith('~')?'/home/guest'+filename.slice(1):resolvePath(filename));
@@ -1094,18 +1228,14 @@ function openViEditor(filename, termContent, termInput){
     if(fileContent===undefined||fileContent===null)fileContent='';
     isNewFile=false;
   }
-
-  // --- Build vi DOM ---
   const viEl=document.createElement('div');
   viEl.className='vi-container';
-
   const viContent=document.createElement('div');
   viContent.className='vi-content';
   viContent.setAttribute('contenteditable','true');
   viContent.setAttribute('spellcheck','false');
   viContent.setAttribute('tabindex','0');
   viContent.textContent=fileContent;
-
   const viStatus=document.createElement('div');
   viStatus.className='vi-statusbar';
   const viStatusLeft=document.createElement('span');
@@ -1113,22 +1243,17 @@ function openViEditor(filename, termContent, termInput){
   viStatusRight.className='vi-statusbar-right';
   viStatus.appendChild(viStatusLeft);
   viStatus.appendChild(viStatusRight);
-
   const viCmd=document.createElement('div');
   viCmd.className='vi-command-line';
   viCmd.style.display='none';
   const viCmdInput=document.createElement('input');
   viCmdInput.className='vi-command-input';
   viCmd.appendChild(viCmdInput);
-
   viEl.appendChild(viContent);
   viEl.appendChild(viStatus);
   viEl.appendChild(viCmd);
-
-  // --- Terminal mode: embed inside the terminal window ---
   const terminalMode = !!(termContent && termInput);
   let winId, win;
-
   if(terminalMode){
     const inputLine=termInput.closest('.terminal-input-line');
     const promptEl=document.getElementById('term-prompt');
@@ -1136,14 +1261,12 @@ function openViEditor(filename, termContent, termInput){
     const windowContent=termContent.closest('.window-content');
     termContent.style.display='none';
     windowContent.appendChild(viEl);
-    // Update terminal window title
     win=windows['terminal'];
     const origTitle='xwsh';
     if(win){
       const titleEl=win.querySelector('.window-title');
       if(titleEl)titleEl.textContent='vi'+(displayName&&displayName!=='[No Name]'?' - '+displayName:'');
     }
-    // exitVi restores terminal state
     var exitVi=function(){
       viEl.remove();
       termContent.style.display='';
@@ -1155,7 +1278,6 @@ function openViEditor(filename, termContent, termInput){
       termContent.scrollTop=termContent.scrollHeight;
     };
   } else {
-    // --- Standalone window mode: from FM or other non-terminal callers ---
     winId='vi-'+Date.now();
     const winTitle='vi'+(displayName&&displayName!=='[No Name]'?' - '+displayName:'');
     const dw=window.innerWidth,dh=window.innerHeight;
@@ -1164,16 +1286,12 @@ function openViEditor(filename, termContent, termInput){
       Math.max(80,(dw-w)/2+30),Math.max(40,(dh-h)/2),w,h,'<div class="vi-window-host"></div>');
     const host=win.querySelector('.vi-window-host');
     host.style.cssText='display:flex;flex-direction:column;height:100%;';
-    // re-parent the vi DOM into the host
     host.appendChild(viContent);
     host.appendChild(viStatus);
     host.appendChild(viCmd);
-    // exitVi closes the window
     var exitVi=function(){ closeWindow(winId); };
   }
-
   let mode='normal';
-
   function getLineCol(){
     const sel=window.getSelection();
     if(!sel.rangeCount)return{line:1,col:1};
@@ -1186,7 +1304,6 @@ function openViEditor(filename, termContent, termInput){
     const lines=text.split('\n');
     return{line:lines.length,col:lines[lines.length-1].length+1};
   }
-
   function updateStatus(){
     const{line,col}=getLineCol();
     viStatusRight.textContent='line '+line+', col '+col;
@@ -1202,21 +1319,17 @@ function openViEditor(filename, termContent, termInput){
       else viStatusLeft.textContent='"'+displayName+'" '+lineCount+'L, '+text.length+'C';
     }
   }
-
   function enterNormalMode(){
     mode='normal';
     viContent.style.caretColor='transparent';
     updateStatus();
   }
-
   function enterInsertMode(){
     mode='insert';
     viContent.style.caretColor='';
     viContent.focus();
     updateStatus();
   }
-
-  // Filesystem write
   function saveFile(){
     if(!filePath){viStatusLeft.textContent='E32: No file name';return false;}
     const text=viContent.textContent||'';
@@ -1231,7 +1344,6 @@ function openViEditor(filename, termContent, termInput){
     viStatusLeft.textContent='"'+displayName+'" '+lines.length+'L, '+text.length+'C written';
     return true;
   }
-
   viContent.style.caretColor='transparent';
   viContent.addEventListener('keydown',(e)=>{
     if(mode==='normal'){
@@ -1289,10 +1401,8 @@ function openViEditor(filename, termContent, termInput){
       setTimeout(updateStatus,0);
     }
   });
-
   viContent.addEventListener('mouseup',()=>updateStatus());
   viContent.addEventListener('keyup',()=>{if(mode==='insert')updateStatus();});
-
   viCmdInput.addEventListener('keydown',(e)=>{
     if(e.key==='Enter'){
       const cmd=viCmdInput.value.slice(1).trim();
@@ -1317,7 +1427,6 @@ function openViEditor(filename, termContent, termInput){
       viCmd.style.display='none';mode='normal';viCmdInput.value='';viContent.focus();updateStatus();
     }
   });
-
   updateStatus();
   setTimeout(()=>viContent.focus(),50);
 }
@@ -1330,7 +1439,7 @@ let osviewInterval=null;
 function openOsview(){const existing=windows['osview'];if(existing){if(existing.classList.contains('minimized'))existing.classList.remove('minimized');bringToFront(existing);return;}const osHTML=`<div class="osview-content" id="osview-body"><div class="osview-title">gr_osview</div><div class="osview-section"><div class="osview-label"><span class="osview-label-key">CPU Usage:</span><div class="osview-legend"><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#2255cc"></span>user</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cc2222"></span>sys</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cc22cc"></span>intr</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#22cc22"></span>idle</span></div></div><div class="osview-bar-container"><div class="osview-bar-segment" id="os-cpu-user" style="background:#2255cc;width:30%"></div><div class="osview-bar-segment" id="os-cpu-sys" style="background:#cc2222;width:10%"></div><div class="osview-bar-segment" id="os-cpu-intr" style="background:#cc22cc;width:2%"></div><div class="osview-bar-segment" id="os-cpu-idle" style="background:#22cc22;width:58%"></div></div></div><div class="osview-section"><div class="osview-label"><span class="osview-label-key">Memory:</span><div class="osview-legend"><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#000088"></span>kernel</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cc2222"></span>fs cache</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cc22cc"></span>dirty</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#2255cc"></span>user</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#22cc22"></span>free</span></div></div><div class="osview-bar-container"><div class="osview-bar-segment" id="os-mem-kernel" style="background:#000088;width:8%"></div><div class="osview-bar-segment" id="os-mem-cache" style="background:#cc2222;width:12%"></div><div class="osview-bar-segment" id="os-mem-dirty" style="background:#cc22cc;width:3%"></div><div class="osview-bar-segment" id="os-mem-user" style="background:#2255cc;width:45%"></div><div class="osview-bar-segment" id="os-mem-free" style="background:#22cc22;width:32%"></div><div class="osview-bar-value" id="os-mem-total">49152</div></div></div><div class="osview-section"><div class="osview-label"><span class="osview-label-key">CPU Wait:</span><div class="osview-legend"><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#2255cc"></span>io</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cccc22"></span>swap</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cc22cc"></span>pio</span></div></div><div class="osview-bar-container"><div class="osview-bar-segment" id="os-wait-io" style="background:#2255cc;width:3%"></div><div class="osview-bar-segment" id="os-wait-swap" style="background:#cccc22;width:0%"></div><div class="osview-bar-segment" id="os-wait-pio" style="background:#cc22cc;width:0%"></div></div></div><div class="osview-section"><div class="osview-label"><span class="osview-label-key">Sys.Act 0.2sec:</span><div class="osview-legend"><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#2255cc"></span>syscall</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cc22cc"></span>switch</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#22cc22"></span>fork</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cccc22"></span>exec</span></div></div><div class="osview-bar-container"><div class="osview-bar-segment" id="os-sys-syscall" style="background:#2255cc;width:15%"></div><div class="osview-bar-segment" id="os-sys-switch" style="background:#cc22cc;width:5%"></div><div class="osview-bar-segment" id="os-sys-fork" style="background:#22cc22;width:1%"></div><div class="osview-bar-segment" id="os-sys-exec" style="background:#cccc22;width:1%"></div><div class="osview-bar-value" id="os-sys-total">20000</div></div></div><div class="osview-section"><div class="osview-label"><span class="osview-label-key">Gfx 0.2sec:</span><div class="osview-legend"><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#2255cc"></span>intr</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cc2222"></span>swch</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#22cc22"></span>fwrt</span></div></div><div class="osview-bar-container"><div class="osview-bar-segment" id="os-gfx-intr" style="background:#2255cc;width:8%"></div><div class="osview-bar-segment" id="os-gfx-swch" style="background:#cc2222;width:3%"></div><div class="osview-bar-segment" id="os-gfx-fwrt" style="background:#22cc22;width:2%"></div><div class="osview-bar-value">5000</div></div></div></div>`;const dw=window.innerWidth,dh=window.innerHeight;const win=createWindow('osview','gr_osview',20,dh-340,Math.min(400,dw-40),300,osHTML);updateOsview();osviewInterval=setInterval(updateOsview,1500);}
 function updateOsview(){let memUsedPct=45;if(performance&&performance.memory){const mem=performance.memory;memUsedPct=Math.round((mem.usedJSHeapSize/mem.jsHeapSizeLimit)*60);}else{memUsedPct=40+Math.random()*20;}const memFreePct=Math.max(5,77-memUsedPct-20);const cpuUser=10+Math.random()*40;const cpuSys=3+Math.random()*12;const cpuIntr=Math.random()*5;const cpuIdle=Math.max(0,100-cpuUser-cpuSys-cpuIntr);setBar('os-cpu-user',cpuUser);setBar('os-cpu-sys',cpuSys);setBar('os-cpu-intr',cpuIntr);setBar('os-cpu-idle',cpuIdle);setBar('os-mem-kernel',6+Math.random()*4);setBar('os-mem-cache',8+Math.random()*8);setBar('os-mem-dirty',1+Math.random()*4);setBar('os-mem-user',memUsedPct);setBar('os-mem-free',memFreePct);setBar('os-wait-io',Math.random()*8);setBar('os-wait-swap',Math.random()*2);setBar('os-sys-syscall',10+Math.random()*20);setBar('os-sys-switch',3+Math.random()*8);setBar('os-sys-fork',Math.random()*3);setBar('os-sys-exec',Math.random()*3);setBar('os-gfx-intr',4+Math.random()*12);setBar('os-gfx-swch',Math.random()*6);setBar('os-gfx-fwrt',Math.random()*5);}
 function setBar(id,pct){const el=document.getElementById(id);if(el)el.style.width=Math.max(0,pct)+'%';}
-function openBrowser(){const existing=windows['browser'];if(existing){if(existing.classList.contains('minimized'))existing.classList.remove('minimized');bringToFront(existing);return;}const brHTML=`<div style="display:flex;flex-direction:column;height:100%;"><div class="browser-toolbar"><div class="browser-nav"><div class="browser-btn" onclick="browserBack()">Back</div><div class="browser-btn" onclick="browserForward()">Forward</div><div class="browser-btn" onclick="browserReload()">Reload</div><div class="browser-btn" onclick="browserHome()">Home</div><div class="browser-btn" onclick="browserStop()">Stop</div></div><div class="browser-url-row"><span class="browser-url-label">Location:</span><input class="browser-url-input" id="browser-url" type="text" value="about:blank" spellcheck="false" onkeydown="if(event.key==='Enter')browserGo(this.value)"></div></div><div class="browser-viewport" id="browser-viewport"><div class="browser-loading-bar" id="browser-loading" style="width:0%"></div><div id="browser-home-page" style="background:#c4c4c4;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px;"><svg width="60" height="60" viewBox="0 0 120 120"><g transform="translate(20,15)"><polygon points="40,0 80,20 40,40 0,20" fill="#e44"/><polygon points="0,20 40,40 40,80 0,60" fill="#4a4"/><polygon points="40,40 80,20 80,60 40,80" fill="#44e"/></g></svg><div style="font-size:18px;font-weight:bold;color:#333;">Netscape Navigator</div><div style="font-size:12px;color:#666;">SGI Enhanced Edition for IRIX 6.5</div><div style="margin-top:10px;font-size:11px;color:#888;max-width:350px;text-align:center;line-height:1.5;">Type a URL in the Location bar above and press Enter.<br>Note: Some sites may not load due to iframe restrictions.</div><div style="margin-top:15px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;"><div class="browser-btn" onclick="browserGo('https://en.wikipedia.org')" style="cursor:pointer">Wikipedia</div><div class="browser-btn" onclick="browserGo(new URL('/blog.html',window.location.href).href)" style="cursor:pointer">Blog</div><div class="browser-btn" onclick="browserGo('https://lite.duckduckgo.com')" style="cursor:pointer">DuckDuckGo</div></div></div><iframe id="browser-iframe" style="display:none;width:100%;height:100%;border:none;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe></div><div class="browser-statusbar" id="browser-status">Document: Done</div></div>`;const dw=window.innerWidth,dh=window.innerHeight;const w=Math.min(1200,dw-20),h=Math.min(840,dh-60);const win=createWindow('browser','Netscape Navigator',Math.max(0,dw-w-10),Math.max(30,(dh-h)/2-40),w,h,brHTML,{menubar:'<span class="menubar-item">File</span><span class="menubar-item">Edit</span><span class="menubar-item">View</span><span class="menubar-item">Go</span><span class="menubar-item">Bookmarks</span><span class="menubar-item disabled">Help</span>'});}
+function openBrowser(){const existing=windows['browser'];if(existing){if(existing.classList.contains('minimized'))existing.classList.remove('minimized');bringToFront(existing);return;}const brHTML=`<div style="display:flex;flex-direction:column;height:100%;"><div class="browser-toolbar"><div class="browser-nav"><div class="browser-btn" onclick="browserBack()">Back</div><div class="browser-btn" onclick="browserForward()">Forward</div><div class="browser-btn" onclick="browserReload()">Reload</div><div class="browser-btn" onclick="browserHome()">Home</div><div class="browser-btn" onclick="browserStop()">Stop</div></div><div class="browser-url-row"><span class="browser-url-label">Location:</span><input class="browser-url-input" id="browser-url" type="text" value="about:blank" spellcheck="false" onkeydown="if(event.key==='Enter')browserGo(this.value)"></div></div><div class="browser-viewport" id="browser-viewport"><div class="browser-loading-bar" id="browser-loading" style="width:0%"></div><div id="browser-home-page" style="background:#c4c4c4;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px;"><svg width="60" height="60" viewBox="0 0 120 120"><g transform="translate(20,15)"><polygon points="40,0 80,20 40,40 0,20" fill="#e44"/><polygon points="0,20 40,40 40,80 0,60" fill="#4a4"/><polygon points="40,40 80,20 80,60 40,80" fill="#44e"/></g></svg><div style="font-size:18px;font-weight:bold;color:#333;">Netscape Navigator</div><div style="font-size:12px;color:#666;">SGI Enhanced Edition for IRIX 6.5</div><div style="margin-top:10px;font-size:11px;color:#888;max-width:350px;text-align:center;line-height:1.5;">Type a URL in the Location bar above and press Enter.<br>Note: Some sites may not load due to iframe restrictions.</div><div style="margin-top:15px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;"><div class="browser-btn" onclick="browserGo('https://en.wikipedia.org')" style="cursor:pointer">Wikipedia</div><div class="browser-btn" onclick="browserGo(getBlogUrl())" style="cursor:pointer">Blog</div><div class="browser-btn" onclick="browserGo('https://lite.duckduckgo.com')" style="cursor:pointer">DuckDuckGo</div></div></div><iframe id="browser-iframe" style="display:none;width:100%;height:100%;border:none;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe></div><div class="browser-statusbar" id="browser-status">Document: Done</div></div>`;const dw=window.innerWidth,dh=window.innerHeight;const w=Math.min(1200,dw-20),h=Math.min(840,dh-60);const win=createWindow('browser','Netscape Navigator',Math.max(0,dw-w-10),Math.max(30,(dh-h)/2-40),w,h,brHTML,{menubar:'<span class="menubar-item">File</span><span class="menubar-item">Edit</span><span class="menubar-item">View</span><span class="menubar-item">Go</span><span class="menubar-item">Bookmarks</span><span class="menubar-item disabled">Help</span>'});}
 const browserHistory=[];
 let browserHistoryIndex=-1;
 function browserGo(url){if(!url)return;if(!url.startsWith('http://')&&!url.startsWith('https://')&&!url.startsWith('about:')&&!url.startsWith('file://'))url='https://'+url;const urlInput=document.getElementById('browser-url');const iframe=document.getElementById('browser-iframe');const homePage=document.getElementById('browser-home-page');const loading=document.getElementById('browser-loading');const status=document.getElementById('browser-status');if(!urlInput||!iframe)return;urlInput.value=url;if(url==='about:blank'){iframe.style.display='none';homePage.style.display='flex';status.textContent='Document: Done';return;}homePage.style.display='none';iframe.style.display='block';loading.style.width='20%';try{status.textContent='Contacting host: '+new URL(url).hostname+'...';}catch(e){}setTimeout(()=>{loading.style.width='50%';try{status.textContent='Transferring data from '+new URL(url).hostname+'...';}catch(e){}},300);setTimeout(()=>{loading.style.width='80%';},600);iframe.onload=()=>{loading.style.width='100%';status.textContent='Document: Done';setTimeout(()=>{loading.style.width='0%';},500);};iframe.onerror=()=>{status.textContent='Error loading document.';loading.style.width='0%';};try{iframe.src=url;}catch(e){status.textContent='Error: Unable to load '+url;}const win=windows['browser'];if(win)win.querySelector('.window-title').textContent='Netscape: '+url;browserHistory.push(url);browserHistoryIndex=browserHistory.length-1;}
@@ -1342,6 +1451,32 @@ function browserStop(){const iframe=document.getElementById('browser-iframe');if
 function openAbout(){const existing=windows['about'];if(existing){if(existing.classList.contains('minimized'))existing.classList.remove('minimized');bringToFront(existing);return;}const aboutHTML=`<div class="welcome-content"><svg class="welcome-logo" viewBox="0 0 120 120"><g transform="translate(20,10)"><polygon points="40,0 80,20 80,60 40,80 0,60 0,20" fill="none" stroke="#555" stroke-width="1"/><polygon points="40,0 80,20 40,40 0,20" fill="#e44" opacity="0.95"/><polygon points="0,20 40,40 40,80 0,60" fill="#4a4" opacity="0.95"/><polygon points="40,40 80,20 80,60 40,80" fill="#44e" opacity="0.95"/><line x1="40" y1="0" x2="40" y2="40" stroke="#fff" stroke-width="0.5" opacity="0.3"/><line x1="0" y1="20" x2="40" y2="40" stroke="#fff" stroke-width="0.5" opacity="0.3"/><line x1="80" y1="20" x2="40" y2="40" stroke="#fff" stroke-width="0.5" opacity="0.3"/></g></svg><div class="welcome-title">Welcome to Silicon Graphics</div><div class="welcome-subtitle">IRIX™ 6.5 — Indigo Magic™ Desktop</div><div class="welcome-sgi-colors"><span style="background:#cc2222"></span><span style="background:#cc8822"></span><span style="background:#cccc22"></span><span style="background:#22aa22"></span><span style="background:#2255cc"></span><span style="background:#8822cc"></span></div><div class="welcome-info"><strong>System:</strong> SGI O2 Workstation (IP32)<br><strong>Processor:</strong> MIPS R5000 @ 180 MHz<br><strong>Memory:</strong> 192 MB<br><strong>Graphics:</strong> CRM<br><strong>OS:</strong> IRIX 6.5 (01090133)<br><br><span style="color:#666;">© 1987-1999 Silicon Graphics, Inc. All Rights Reserved.</span></div></div>`;const dw=window.innerWidth,dh=window.innerHeight;const w=Math.min(420,dw-40),h=Math.min(440,dh-40);createWindow('about','Welcome to SGI',Math.max(50,(dw-w)*0.25),Math.max(30,(dh-h)/2-30),w,h,aboutHTML);}
 function drawDesktopBackground(){const canvas=document.getElementById('desktop-bg');canvas.width=window.innerWidth;canvas.height=window.innerHeight;const ctx=canvas.getContext('2d');const grad=ctx.createRadialGradient(canvas.width*0.5,canvas.height*0.45,0,canvas.width*0.5,canvas.height*0.45,canvas.width*0.7);grad.addColorStop(0,'#6aadaa');grad.addColorStop(0.5,'#5a9e9a');grad.addColorStop(1,'#4a8a86');ctx.fillStyle=grad;ctx.fillRect(0,0,canvas.width,canvas.height);const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);const data=imageData.data;for(let i=0;i<data.length;i+=4){const noise=(Math.random()-0.5)*18;data[i]+=noise;data[i+1]+=noise;data[i+2]+=noise;}ctx.putImageData(imageData,0,0);ctx.globalAlpha=0.03;ctx.strokeStyle='#000';ctx.lineWidth=1;for(let x=0;x<canvas.width;x+=4){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();}for(let y=0;y<canvas.height;y+=4){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();}ctx.globalAlpha=1;}
 window.addEventListener('resize',drawDesktopBackground);
+function getBlogUrl(){var loc=window.location.href;return loc.substring(0,loc.lastIndexOf('/')+1)+'blog.html';}
+(function(){
+  var isMobile=/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if(!isMobile&&window.innerWidth<800)isMobile=true;
+  if(!isMobile&&('ontouchstart' in window)&&window.innerWidth<1024)isMobile=true;
+  if(isMobile){document.getElementById('mobile-warning').classList.remove('hidden');}
+})();
+(function(){
+  try{
+    var c=document.createElement('canvas');c.width=2;c.height=2;
+    var ctx=c.getContext('2d');
+    ctx.fillStyle='#a0c';ctx.fillRect(0,0,2,2);
+    var d1=ctx.getImageData(0,0,2,2);
+    var pixels=d1.data;
+    var allZero=true;
+    for(var i=0;i<pixels.length;i++){if(pixels[i]!==0){allZero=false;break;}}
+    if(allZero){document.getElementById('canvas-warning').classList.remove('hidden');return;}
+    c.toDataURL();
+    var d2=ctx.getImageData(0,0,2,2);
+    var mismatch=false;
+    for(var i=0;i<d1.data.length;i++){if(d1.data[i]!==d2.data[i]){mismatch=true;break;}}
+    if(mismatch){document.getElementById('canvas-warning').classList.remove('hidden');}
+  }catch(e){
+    document.getElementById('canvas-warning').classList.remove('hidden');
+  }
+})();
 function typeBoot(){if(bootIndex<bootMessages.length){const line=bootMessages[bootIndex];const span=document.createElement('div');span.textContent=line;if(line.startsWith('IRIX')||line.startsWith('Welcome')||line.startsWith('CPU:'))span.classList.add('highlight');bootTextEl.appendChild(span);bootTextEl.scrollTop=bootTextEl.scrollHeight;bootIndex++;const delay=line===''?80:(line.startsWith('Starting')?120:40);setTimeout(typeBoot,delay);}else{markBootShown();setTimeout(()=>{bootSplash.classList.add('hidden');showDesktop(false);},600);}}
 if(shouldShowBoot()){setTimeout(typeBoot,500);}else{bootSplash.style.display='none';showDesktop(true);}
 </script>
