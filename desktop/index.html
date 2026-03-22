@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="shortcut icon" href=favicon.ico>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+<title>x3c49 desktop</title>
+<style>
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+:root {
+  --irix-bg: #2e8b8b;
+  --irix-bg-dark: #1a6b6b;
+  --irix-bg-light: #4aacac;
+  --motif-bg: #c4c4c4;
+  --motif-bg-dark: #8e8e8e;
+  --motif-bg-light: #e8e8e8;
+  --motif-top-shadow: #ffffff;
+  --motif-bottom-shadow: #5a5a5a;
+  --motif-select: #b0b0b0;
+  --titlebar-active: #8e7cc3;
+  --titlebar-active-dark: #6a5a9e;
+  --titlebar-active-light: #a99cd4;
+  --titlebar-inactive: #a0a0a0;
+  --titlebar-text: #ffffff;
+  --titlebar-inactive-text: #666666;
+  --menu-bg: #c4c4c4;
+  --menu-highlight: #8e7cc3;
+  --menu-highlight-text: #ffffff;
+  --menu-text: #000000;
+  --menu-disabled: #888888;
+  --term-bg: #1a1a5c;
+  --term-fg: #d0d0d0;
+  --term-prompt: #40e040;
+  --term-cursor: #e0a020;
+  --scrollbar-bg: #b0b0b0;
+  --text-color: #000000;
+  --selection-color: #8e7cc3;
+}
+body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  font-family: 'Helvetica', 'Arial', sans-serif;
+  font-size: 12px;
+  color: var(--text-color);
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#desktop {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-color: var(--irix-bg);
+}
+#toolchest {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.toolchest-btn {
+  width: 105px;
+  height: 26px;
+  background: var(--motif-bg);
+  border-top: 2px solid var(--motif-top-shadow);
+  border-left: 2px solid var(--motif-top-shadow);
+  border-bottom: 2px solid var(--motif-bottom-shadow);
+  border-right: 2px solid var(--motif-bottom-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px 0 10px;
+  cursor: pointer;
+  font-family: 'Helvetica', 'Arial', sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--text-color);
+  position: relative;
+}
+.toolchest-btn:active, .toolchest-btn.active {
+  border-top: 2px solid var(--motif-bottom-shadow);
+  border-left: 2px solid var(--motif-bottom-shadow);
+  border-bottom: 2px solid var(--motif-top-shadow);
+  border-right: 2px solid var(--motif-top-shadow);
+  background: var(--motif-select);
+}
+.toolchest-arrow {
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid #333;
+}
+.toolchest-menu {
+  position: absolute;
+  left: 105px;
+  top: 0;
+  min-width: 180px;
+  background: var(--menu-bg);
+  border-top: 2px solid var(--motif-top-shadow);
+  border-left: 2px solid var(--motif-top-shadow);
+  border-bottom: 2px solid var(--motif-bottom-shadow);
+  border-right: 2px solid var(--motif-bottom-shadow);
+  padding: 2px 0;
+  z-index: 10001;
+  display: none;
+  box-shadow: 3px 3px 6px rgba(0,0,0,0.4);
+}
+.toolchest-menu.visible { display: block; }
+.menu-item {
+  padding: 3px 20px 3px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  height: 22px;
+  white-space: nowrap;
+}
+.menu-item:hover { background: var(--menu-highlight); color: var(--menu-highlight-text); }
+.menu-item.disabled { color: var(--menu-disabled); cursor: default; }
+.menu-item.disabled:hover { background: transparent; color: var(--menu-disabled); }
+.menu-separator {
+  height: 2px;
+  margin: 2px 4px;
+  border-top: 1px solid var(--motif-bottom-shadow);
+  border-bottom: 1px solid var(--motif-top-shadow);
+}
+#desktop-icons {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1;
+}
+.desktop-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  width: 80px;
+}
+.desktop-icon:hover { border: 1px dotted #fff; }
+.desktop-icon.selected { border: 1px solid #fff; background: rgba(0,0,0,0.15); }
+.desktop-icon-img {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  image-rendering: pixelated;
+}
+.desktop-icon-label {
+  color: #ffffff;
+  font-size: 11px;
+  text-align: center;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+  word-wrap: break-word;
+  max-width: 76px;
+}
+.window {
+  position: absolute;
+  min-width: 200px;
+  min-height: 100px;
+  background: var(--motif-bg);
+  border-top: 2px solid var(--motif-top-shadow);
+  border-left: 2px solid var(--motif-top-shadow);
+  border-bottom: 2px solid var(--motif-bottom-shadow);
+  border-right: 2px solid var(--motif-bottom-shadow);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 3px 3px 8px rgba(0,0,0,0.35);
+}
+.window.minimized { display: none; }
+.window.maximized {
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+.window-titlebar {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 2px;
+  gap: 2px;
+  cursor: default;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--motif-bottom-shadow);
+}
+.window.active .window-titlebar {
+  background: linear-gradient(180deg, var(--titlebar-active-light) 0%, var(--titlebar-active) 40%, var(--titlebar-active-dark) 100%);
+}
+.window:not(.active) .window-titlebar {
+  background: linear-gradient(180deg, #c0c0c0 0%, var(--titlebar-inactive) 40%, #888 100%);
+}
+.window-title {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+}
+.window.active .window-title { color: var(--titlebar-text); text-shadow: 1px 1px 1px rgba(0,0,0,0.3); }
+.window:not(.active) .window-title { color: var(--titlebar-inactive-text); }
+.titlebar-btn {
+  width: 18px;
+  height: 18px;
+  background: var(--motif-bg);
+  border-top: 2px solid var(--motif-top-shadow);
+  border-left: 2px solid var(--motif-top-shadow);
+  border-bottom: 2px solid var(--motif-bottom-shadow);
+  border-right: 2px solid var(--motif-bottom-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.titlebar-btn:active {
+  border-top: 2px solid var(--motif-bottom-shadow);
+  border-left: 2px solid var(--motif-bottom-shadow);
+  border-bottom: 2px solid var(--motif-top-shadow);
+  border-right: 2px solid var(--motif-top-shadow);
+}
+.btn-menu::after { content: ''; width: 10px; height: 2px; background: #333; }
+.btn-minimize::after { content: ''; width: 7px; height: 7px; border: 1.5px solid #333; background: transparent; }
+.btn-maximize::after { content: ''; width: 10px; height: 10px; border: 1.5px solid #333; background: transparent; }
+.window-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+.window-menubar {
+  height: 24px;
+  background: var(--motif-bg);
+  border-bottom: 1px solid var(--motif-bottom-shadow);
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  gap: 0;
+  flex-shrink: 0;
+}
+.menubar-item { padding: 2px 10px; font-size: 12px; cursor: pointer; color: var(--text-color); }
+.menubar-item:hover { background: var(--menu-highlight); color: #fff; }
+.menubar-item.disabled { color: var(--menu-disabled); }
+.window-resize {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: se-resize;
+  z-index: 5;
+}
+.window-resize::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--motif-bottom-shadow);
+  border-bottom: 2px solid var(--motif-bottom-shadow);
+}
+.window-content {
+  flex: 1;
+  margin: 3px;
+  border-top: 1px solid var(--motif-bottom-shadow);
+  border-left: 1px solid var(--motif-bottom-shadow);
+  border-bottom: 1px solid var(--motif-top-shadow);
+  border-right: 1px solid var(--motif-top-shadow);
+  overflow: hidden;
+  position: relative;
+}
+.terminal-container {
+  width: 100%;
+  height: 100%;
+  background: var(--term-bg);
+  color: var(--term-fg);
+  font-family: 'IBM Plex Mono', 'Courier New', 'Courier', monospace;
+  font-size: 13px;
+  line-height: 1.3;
+  padding: 6px 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  cursor: text;
+}
+.terminal-container:focus { outline: none; }
+.terminal-line { white-space: pre-wrap; word-break: break-all; min-height: 1.3em; }
+.terminal-prompt { color: var(--term-prompt); white-space: pre; }
+.terminal-input-line { display: flex; align-items: center; min-height: 1.3em; }
+.terminal-input {
+  background: transparent;
+  color: var(--term-fg);
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: inherit;
+  flex: 1;
+  caret-color: var(--term-cursor);
+  line-height: 1.3;
+  padding: 0;
+  margin: 0;
+}
+.terminal-tab-hint { color: #7777bb; font-size: 12px; white-space: pre-wrap; min-height: 1.3em; }
+.vi-container {
+  width: 100%;
+  height: 100%;
+  background: var(--term-bg);
+  color: var(--term-fg);
+  font-family: 'IBM Plex Mono', 'Courier New', 'Courier', monospace;
+  font-size: 13px;
+  line-height: 1.35;
+  display: flex;
+  flex-direction: column;
+}
+.vi-content {
+  flex: 1;
+  padding: 2px 6px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  outline: none;
+}
+.vi-content:focus { outline: none; }
+.vi-statusbar {
+  height: 20px;
+  background: var(--term-bg);
+  color: var(--term-fg);
+  border-top: 1px solid #333;
+  padding: 0 6px;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+.vi-statusbar-insert { color: #40e040; }
+.vi-statusbar-right { color: #666; font-size: 11px; }
+.vi-command-line {
+  height: 20px;
+  background: var(--term-bg);
+  color: var(--term-fg);
+  padding: 0 6px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.vi-command-input {
+  background: transparent;
+  color: var(--term-fg);
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: inherit;
+  flex: 1;
+  caret-color: var(--term-cursor);
+}
+#toolchest-items {
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+#toolchest-items.collapsed { max-height: 0 !important; opacity: 0; pointer-events: none; }
+.toolchest-header {
+  width: 105px;
+  height: 22px;
+  background: var(--motif-bg-dark);
+  border-top: 2px solid var(--motif-top-shadow);
+  border-left: 2px solid var(--motif-top-shadow);
+  border-bottom: 2px solid var(--motif-bottom-shadow);
+  border-right: 2px solid var(--motif-bottom-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: 'Helvetica', 'Arial', sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--text-color);
+  letter-spacing: 0.5px;
+}
+.toolchest-header:active {
+  border-top: 2px solid var(--motif-bottom-shadow);
+  border-left: 2px solid var(--motif-bottom-shadow);
+  border-bottom: 2px solid var(--motif-top-shadow);
+  border-right: 2px solid var(--motif-top-shadow);
+}
+.fm-toolbar {
+  height: 30px;
+  background: var(--motif-bg);
+  border-bottom: 1px solid var(--motif-bottom-shadow);
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.fm-path {
+  flex: 1;
+  height: 20px;
+  background: #fff;
+  border-top: 1px solid var(--motif-bottom-shadow);
+  border-left: 1px solid var(--motif-bottom-shadow);
+  border-bottom: 1px solid var(--motif-top-shadow);
+  border-right: 1px solid var(--motif-top-shadow);
+  padding: 0 6px;
+  font-size: 11px;
+  font-family: 'Helvetica', sans-serif;
+  display: flex;
+  align-items: center;
+  color: #333;
+}
+.fm-content {
+  background: #d8d8d8;
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 6px;
+}
+.fm-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 72px;
+  padding: 4px;
+  cursor: pointer;
+  gap: 2px;
+}
+.fm-item:hover { background: rgba(0,0,0,0.08); }
+.fm-item.selected { background: var(--selection-color); color: #fff; }
+.fm-item-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
+.fm-item-label { font-size: 10px; text-align: center; word-break: break-all; line-height: 1.2; }
+.fm-statusbar {
+  height: 22px;
+  background: var(--motif-bg);
+  border-top: 1px solid var(--motif-bottom-shadow);
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 11px;
+  color: #444;
+  flex-shrink: 0;
+}
+.osview-content {
+  background: var(--motif-bg);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  overflow-y: auto;
+}
+.osview-title { font-weight: bold; font-size: 12px; padding-bottom: 2px; }
+.osview-section { display: flex; flex-direction: column; gap: 3px; }
+.osview-label { font-size: 11px; display: flex; align-items: center; gap: 6px; }
+.osview-label-key { font-weight: bold; min-width: 80px; }
+.osview-legend { display: flex; gap: 6px; flex-wrap: wrap; }
+.osview-legend-item { font-size: 10px; display: flex; align-items: center; gap: 2px; }
+.osview-legend-swatch { width: 10px; height: 8px; display: inline-block; }
+.osview-bar-container {
+  height: 18px;
+  background: #333;
+  border-top: 1px solid var(--motif-bottom-shadow);
+  border-left: 1px solid var(--motif-bottom-shadow);
+  border-bottom: 1px solid var(--motif-top-shadow);
+  border-right: 1px solid var(--motif-top-shadow);
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+.osview-bar-segment { height: 100%; transition: width 0.5s ease; }
+.osview-bar-value {
+  position: absolute;
+  right: 4px;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  font-size: 10px;
+  color: #ccc;
+  font-family: 'Courier New', monospace;
+}
+.browser-toolbar {
+  background: var(--motif-bg);
+  border-bottom: 1px solid var(--motif-bottom-shadow);
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.browser-nav { display: flex; align-items: center; gap: 3px; }
+.browser-btn {
+  height: 22px;
+  padding: 0 8px;
+  background: var(--motif-bg);
+  border-top: 2px solid var(--motif-top-shadow);
+  border-left: 2px solid var(--motif-top-shadow);
+  border-bottom: 2px solid var(--motif-bottom-shadow);
+  border-right: 2px solid var(--motif-bottom-shadow);
+  font-size: 11px;
+  cursor: pointer;
+  font-family: 'Helvetica', sans-serif;
+  display: flex;
+  align-items: center;
+}
+.browser-btn:active {
+  border-top: 2px solid var(--motif-bottom-shadow);
+  border-left: 2px solid var(--motif-bottom-shadow);
+  border-bottom: 2px solid var(--motif-top-shadow);
+  border-right: 2px solid var(--motif-top-shadow);
+}
+.browser-url-row { display: flex; align-items: center; gap: 4px; }
+.browser-url-label { font-size: 11px; font-weight: bold; white-space: nowrap; }
+.browser-url-input {
+  flex: 1;
+  height: 20px;
+  background: #fff;
+  border-top: 2px solid var(--motif-bottom-shadow);
+  border-left: 2px solid var(--motif-bottom-shadow);
+  border-bottom: 2px solid var(--motif-top-shadow);
+  border-right: 2px solid var(--motif-top-shadow);
+  padding: 0 6px;
+  font-size: 12px;
+  font-family: 'Helvetica', sans-serif;
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.browser-viewport { flex: 1; background: #fff; position: relative; }
+.browser-viewport iframe { width: 100%; height: 100%; border: none; }
+.browser-statusbar {
+  height: 20px;
+  background: var(--motif-bg);
+  border-top: 1px solid var(--motif-bottom-shadow);
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 10px;
+  color: #444;
+  flex-shrink: 0;
+}
+.browser-loading-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: var(--titlebar-active);
+  transition: width 0.3s;
+  z-index: 2;
+}
+.welcome-content {
+  background: #1a1a5e;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 30px;
+  text-align: center;
+  gap: 16px;
+}
+.welcome-logo { width: 80px; height: 80px; }
+.welcome-title { font-size: 22px; font-weight: bold; letter-spacing: 2px; }
+.welcome-subtitle { font-size: 14px; color: #aaa; line-height: 1.6; }
+.welcome-info { margin-top: 10px; font-size: 11px; color: #888; line-height: 1.5; }
+.welcome-sgi-colors { display: flex; gap: 0; margin-top: 10px; }
+.welcome-sgi-colors span { width: 30px; height: 6px; }
+::-webkit-scrollbar { width: 16px; height: 16px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-bg); border: 1px solid #888; }
+::-webkit-scrollbar-thumb {
+  background: var(--motif-bg);
+  border-top: 2px solid var(--motif-top-shadow);
+  border-left: 2px solid var(--motif-top-shadow);
+  border-bottom: 2px solid var(--motif-bottom-shadow);
+  border-right: 2px solid var(--motif-bottom-shadow);
+}
+::-webkit-scrollbar-button {
+  background: var(--motif-bg);
+  border-top: 2px solid var(--motif-top-shadow);
+  border-left: 2px solid var(--motif-top-shadow);
+  border-bottom: 2px solid var(--motif-bottom-shadow);
+  border-right: 2px solid var(--motif-bottom-shadow);
+  height: 16px;
+  width: 16px;
+}
+#boot-splash {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: #000;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.5s ease;
+}
+#boot-splash.hidden { opacity: 0; pointer-events: none; }
+.boot-logo { margin-bottom: 30px; }
+.boot-text {
+  color: #aaa;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  text-align: left;
+  line-height: 1.5;
+  max-width: 600px;
+  width: 90%;
+}
+.boot-text .highlight { color: #fff; }
+#context-menu {
+  position: absolute;
+  z-index: 50000;
+  min-width: 200px;
+  background: var(--menu-bg);
+  border-top: 2px solid var(--motif-top-shadow);
+  border-left: 2px solid var(--motif-top-shadow);
+  border-bottom: 2px solid var(--motif-bottom-shadow);
+  border-right: 2px solid var(--motif-bottom-shadow);
+  padding: 2px 0;
+  display: none;
+  box-shadow: 3px 3px 6px rgba(0,0,0,0.4);
+}
+#context-menu.visible { display: block; }
+#context-menu .menu-header {
+  padding: 3px 12px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+  border-bottom: 1px solid var(--motif-bottom-shadow);
+  margin-bottom: 2px;
+  cursor: default;
+}
+#polybar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 30px;
+  background: var(--motif-bg);
+  border-top: 2px solid var(--motif-top-shadow);
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  gap: 2px;
+  z-index: 9999;
+}
+#polybar-left { display: flex; align-items: center; gap: 0; flex-shrink: 0; margin-right: 4px; }
+.polybar-sgi-logo {
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; padding: 2px;
+  border-top: 1px solid var(--motif-top-shadow);
+  border-left: 1px solid var(--motif-top-shadow);
+  border-bottom: 1px solid var(--motif-bottom-shadow);
+  border-right: 1px solid var(--motif-bottom-shadow);
+  margin-right: 4px;
+}
+.polybar-sgi-logo:active {
+  border-top: 1px solid var(--motif-bottom-shadow);
+  border-left: 1px solid var(--motif-bottom-shadow);
+  border-bottom: 1px solid var(--motif-top-shadow);
+  border-right: 1px solid var(--motif-top-shadow);
+}
+.polybar-divider {
+  width: 2px; height: 22px;
+  border-left: 1px solid var(--motif-bottom-shadow);
+  border-right: 1px solid var(--motif-top-shadow);
+  margin: 0 3px;
+  flex-shrink: 0;
+}
+#polybar-windows {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow-x: hidden;
+  min-width: 0;
+}
+.polybar-window-btn {
+  height: 22px;
+  padding: 0 10px;
+  background: var(--motif-bg);
+  border-top: 2px solid var(--motif-top-shadow);
+  border-left: 2px solid var(--motif-top-shadow);
+  border-bottom: 2px solid var(--motif-bottom-shadow);
+  border-right: 2px solid var(--motif-bottom-shadow);
+  font-size: 11px;
+  font-family: 'Helvetica', 'Arial', sans-serif;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+.polybar-window-btn:active {
+  border-top: 2px solid var(--motif-bottom-shadow);
+  border-left: 2px solid var(--motif-bottom-shadow);
+  border-bottom: 2px solid var(--motif-top-shadow);
+  border-right: 2px solid var(--motif-top-shadow);
+}
+.polybar-window-btn.active-win {
+  background: var(--motif-select);
+  border-top: 2px solid var(--motif-bottom-shadow);
+  border-left: 2px solid var(--motif-bottom-shadow);
+  border-bottom: 2px solid var(--motif-top-shadow);
+  border-right: 2px solid var(--motif-top-shadow);
+}
+.polybar-window-btn.minimized-win { color: #777; font-style: italic; }
+#polybar-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 4px;
+}
+#polybar-clock {
+  font-size: 11px;
+  font-family: 'Helvetica', 'Arial', sans-serif;
+  color: #333;
+  padding: 2px 8px;
+  background: var(--motif-bg);
+  border-top: 1px solid var(--motif-bottom-shadow);
+  border-left: 1px solid var(--motif-bottom-shadow);
+  border-bottom: 1px solid var(--motif-top-shadow);
+  border-right: 1px solid var(--motif-top-shadow);
+  white-space: nowrap;
+}
+/* ===== Warning Dialogs ===== */
+.irix-dialog-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.45);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.irix-dialog-overlay.hidden { display: none; }
+.irix-dialog {
+  background: var(--motif-bg);
+  border-top: 2px solid var(--motif-top-shadow);
+  border-left: 2px solid var(--motif-top-shadow);
+  border-bottom: 2px solid var(--motif-bottom-shadow);
+  border-right: 2px solid var(--motif-bottom-shadow);
+  box-shadow: 4px 4px 12px rgba(0,0,0,0.5);
+  min-width: 300px;
+  max-width: 460px;
+  font-family: 'Helvetica', 'Arial', sans-serif;
+  font-size: 12px;
+  user-select: none;
+}
+.irix-dialog-titlebar {
+  height: 24px;
+  background: linear-gradient(180deg, var(--titlebar-active-light) 0%, var(--titlebar-active) 40%, var(--titlebar-active-dark) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--motif-bottom-shadow);
+}
+.irix-dialog-titlebar span {
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+}
+.irix-dialog-body {
+  display: flex;
+  gap: 14px;
+  padding: 18px 20px 14px 20px;
+  align-items: flex-start;
+}
+.irix-dialog-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+}
+.irix-dialog-text {
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #000;
+}
+.irix-dialog-text strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+.irix-dialog-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 20px 16px 20px;
+}
+.irix-dialog-btn {
+  height: 24px;
+  min-width: 80px;
+  padding: 0 16px;
+  background: var(--motif-bg);
+  border-top: 2px solid var(--motif-top-shadow);
+  border-left: 2px solid var(--motif-top-shadow);
+  border-bottom: 2px solid var(--motif-bottom-shadow);
+  border-right: 2px solid var(--motif-bottom-shadow);
+  font-size: 12px;
+  font-family: 'Helvetica', 'Arial', sans-serif;
+  cursor: pointer;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.irix-dialog-btn:active {
+  border-top: 2px solid var(--motif-bottom-shadow);
+  border-left: 2px solid var(--motif-bottom-shadow);
+  border-bottom: 2px solid var(--motif-top-shadow);
+  border-right: 2px solid var(--motif-top-shadow);
+  background: var(--motif-select);
+}
+.irix-dialog-btn-primary {
+  outline: 2px solid #000;
+  outline-offset: -4px;
+}
+</style>
+</head>
+<body>
+<!-- Mobile Warning Dialog -->
+<div class="irix-dialog-overlay hidden" id="mobile-warning">
+  <div class="irix-dialog">
+    <div class="irix-dialog-titlebar"><span>System Notice</span></div>
+    <div class="irix-dialog-body">
+      <div class="irix-dialog-icon">
+        <svg viewBox="0 0 36 36" width="36" height="36">
+          <polygon points="18,2 34,32 2,32" fill="#cccc22" stroke="#888" stroke-width="1.5"/>
+          <text x="18" y="27" text-anchor="middle" font-family="Helvetica,Arial" font-size="20" font-weight="bold" fill="#000">!</text>
+        </svg>
+      </div>
+      <div class="irix-dialog-text">
+        <strong>Unsupported Display Configuration</strong>
+        This workstation environment requires a minimum display resolution of 800x600 and is not designed for handheld devices.<br><br>
+        For the intended experience, please connect from a desktop or laptop computer.
+      </div>
+    </div>
+    <div class="irix-dialog-actions">
+      <div class="irix-dialog-btn irix-dialog-btn-primary" onclick="document.getElementById('mobile-warning').classList.add('hidden')">Dismiss</div>
+    </div>
+  </div>
+</div>
+
+<!-- Canvas / Privacy Browser Warning Dialog -->
+<div class="irix-dialog-overlay hidden" id="canvas-warning">
+  <div class="irix-dialog">
+    <div class="irix-dialog-titlebar"><span>Graphics Notice</span></div>
+    <div class="irix-dialog-body">
+      <div class="irix-dialog-icon">
+        <svg viewBox="0 0 36 36" width="36" height="36">
+          <circle cx="18" cy="18" r="16" fill="#2255cc" stroke="#888" stroke-width="1.5"/>
+          <text x="18" y="14" text-anchor="middle" font-family="Helvetica,Arial" font-size="16" font-weight="bold" fill="#fff">i</text>
+          <rect x="15.5" y="17" width="5" height="12" rx="1" fill="#fff"/>
+        </svg>
+      </div>
+      <div class="irix-dialog-text">
+        <strong>CRM Graphics: Canvas Data Blocked</strong>
+        Your browser is blocking canvas data extraction, likely due to privacy protection settings (e.g. LibreWolf, Brave, hardened Firefox).<br><br>
+        The desktop background texture may not render correctly. To resolve this, allow canvas access for this site in your browser's privacy settings.
+      </div>
+    </div>
+    <div class="irix-dialog-actions">
+      <div class="irix-dialog-btn irix-dialog-btn-primary" onclick="document.getElementById('canvas-warning').classList.add('hidden')">OK</div>
+    </div>
+  </div>
+</div>
+
+<!-- Boot Splash -->
+<div id="boot-splash">
+  <div class="boot-logo">
+    <svg width="240" height="130" viewBox="0 0 240 130">
+      <g transform="translate(80,10)">
+        <polygon points="40,0 80,20 80,60 40,80 0,60 0,20" fill="none" stroke="#555" stroke-width="1"/>
+        <polygon points="40,0 80,20 40,40 0,20" fill="#e44" opacity="0.9"/>
+        <polygon points="0,20 40,40 40,80 0,60" fill="#4a4" opacity="0.9"/>
+        <polygon points="40,40 80,20 80,60 40,80" fill="#44e" opacity="0.9"/>
+        <line x1="40" y1="0" x2="40" y2="40" stroke="#fff" stroke-width="0.5" opacity="0.4"/>
+        <line x1="0" y1="20" x2="40" y2="40" stroke="#fff" stroke-width="0.5" opacity="0.4"/>
+        <line x1="80" y1="20" x2="40" y2="40" stroke="#fff" stroke-width="0.5" opacity="0.4"/>
+      </g>
+      <text x="120" y="118" text-anchor="middle" fill="#888" font-family="Helvetica, Arial" font-size="16" letter-spacing="4">Silicon Graphics</text>
+    </svg>
+  </div>
+  <div class="boot-text" id="boot-text"></div>
+</div>
+
+<div id="desktop" style="display:none;">
+  <canvas id="desktop-bg" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;"></canvas>
+  <div id="toolchest">
+    <div class="toolchest-header" id="toolchest-toggle" title="Click to show/hide Toolchest">Toolchest</div>
+    <div id="toolchest-items" style="max-height:200px;">
+      <div class="toolchest-btn" data-menu="desktop-menu"><span>Desktop</span><span class="toolchest-arrow"></span></div>
+      <div class="toolchest-btn" data-menu="selected-menu"><span>Selected</span><span class="toolchest-arrow"></span></div>
+      <div class="toolchest-btn" data-menu="internet-menu"><span>Internet</span><span class="toolchest-arrow"></span></div>
+      <div class="toolchest-btn" data-menu="find-menu"><span>Find</span><span class="toolchest-arrow"></span></div>
+      <div class="toolchest-btn" data-menu="system-menu"><span>System</span><span class="toolchest-arrow"></span></div>
+      <div class="toolchest-btn" data-menu="help-menu"><span>Help</span><span class="toolchest-arrow"></span></div>
+    </div>
+  </div>
+  <div class="toolchest-menu" id="desktop-menu">
+    <div class="menu-item" onclick="openApp('terminal')">Open Unix Shell</div>
+    <div class="menu-item" onclick="openApp('fm')">File Manager</div>
+    <div class="menu-separator"></div>
+    <div class="menu-item" onclick="openApp('osview')">System Monitor (gr_osview)</div>
+    <div class="menu-item" onclick="openApp('about')">About This System</div>
+    <div class="menu-separator"></div>
+    <div class="menu-item disabled">Desks Overview</div>
+    <div class="menu-item disabled">Customize...</div>
+    <div class="menu-separator"></div>
+    <div class="menu-item disabled">Log Out</div>
+  </div>
+  <div class="toolchest-menu" id="selected-menu">
+    <div class="menu-item disabled">Open</div>
+    <div class="menu-item disabled">Print</div>
+    <div class="menu-separator"></div>
+    <div class="menu-item disabled">Copy</div>
+    <div class="menu-item disabled">Cut</div>
+    <div class="menu-item disabled">Paste</div>
+    <div class="menu-separator"></div>
+    <div class="menu-item disabled">Properties...</div>
+  </div>
+  <div class="toolchest-menu" id="internet-menu">
+    <div class="menu-item" onclick="openApp('browser')">Netscape Navigator</div>
+    <div class="menu-separator"></div>
+    <div class="menu-item disabled">InPerson (Video)</div>
+    <div class="menu-item disabled">Mail</div>
+  </div>
+  <div class="toolchest-menu" id="find-menu">
+    <div class="menu-item disabled">Find File...</div>
+    <div class="menu-item disabled">Find Remote Host...</div>
+    <div class="menu-item disabled">Search Index...</div>
+  </div>
+  <div class="toolchest-menu" id="system-menu">
+    <div class="menu-item" onclick="openApp('terminal')">Unix Shell (xwsh)</div>
+    <div class="menu-item" onclick="openApp('osview')">System Monitor</div>
+    <div class="menu-separator"></div>
+    <div class="menu-item disabled">System Manager</div>
+    <div class="menu-item disabled">Software Manager</div>
+    <div class="menu-item disabled">Disk Manager</div>
+    <div class="menu-separator"></div>
+    <div class="menu-item disabled">User Manager</div>
+    <div class="menu-item disabled">Privilege Manager</div>
+  </div>
+  <div class="toolchest-menu" id="help-menu">
+    <div class="menu-item" onclick="openApp('about')">About This System</div>
+    <div class="menu-separator"></div>
+    <div class="menu-item disabled">Help Central</div>
+    <div class="menu-item disabled">IRIS InSight</div>
+    <div class="menu-item disabled">Desktop Help</div>
+    <div class="menu-separator"></div>
+    <div class="menu-item disabled">Release Notes</div>
+  </div>
+  <div id="desktop-icons">
+    <div class="desktop-icon" ondblclick="openApp('terminal')">
+      <div class="desktop-icon-img">
+        <svg viewBox="0 0 48 48" width="48" height="48">
+          <rect x="2" y="4" width="44" height="34" rx="2" fill="#1a1a5e" stroke="#888" stroke-width="1.5"/>
+          <rect x="4" y="6" width="40" height="30" fill="#1a1a5e"/>
+          <text x="8" y="20" fill="#0f0" font-family="monospace" font-size="8">IRIS%</text>
+          <text x="8" y="30" fill="#ff0" font-family="monospace" font-size="7">_</text>
+          <rect x="12" y="38" width="24" height="6" rx="1" fill="#aaa" stroke="#888" stroke-width="0.5"/>
+        </svg>
+      </div>
+      <span class="desktop-icon-label">Unix Shell</span>
+    </div>
+    <div class="desktop-icon" ondblclick="openApp('fm')">
+      <div class="desktop-icon-img">
+        <svg viewBox="0 0 48 48" width="48" height="48">
+          <rect x="2" y="10" width="44" height="32" rx="2" fill="#d4a843" stroke="#8a6d2b" stroke-width="1.5"/>
+          <rect x="2" y="6" width="20" height="8" rx="2" fill="#d4a843" stroke="#8a6d2b" stroke-width="1.5"/>
+          <rect x="6" y="16" width="36" height="22" fill="#e8c95a" rx="1"/>
+        </svg>
+      </div>
+      <span class="desktop-icon-label">File Manager</span>
+    </div>
+    <div class="desktop-icon" ondblclick="openApp('browser')">
+      <div class="desktop-icon-img">
+        <svg viewBox="0 0 48 48" width="48" height="48">
+          <circle cx="24" cy="24" r="20" fill="#1a5a8a" stroke="#888" stroke-width="1.5"/>
+          <ellipse cx="24" cy="24" rx="10" ry="20" fill="none" stroke="#4a9aca" stroke-width="1"/>
+          <line x1="4" y1="24" x2="44" y2="24" stroke="#4a9aca" stroke-width="1"/>
+          <line x1="24" y1="4" x2="24" y2="44" stroke="#4a9aca" stroke-width="1"/>
+          <ellipse cx="24" cy="14" rx="17" ry="2" fill="none" stroke="#4a9aca" stroke-width="0.5"/>
+          <ellipse cx="24" cy="34" rx="17" ry="2" fill="none" stroke="#4a9aca" stroke-width="0.5"/>
+        </svg>
+      </div>
+      <span class="desktop-icon-label">Netscape</span>
+    </div>
+    <div class="desktop-icon" ondblclick="openApp('osview')">
+      <div class="desktop-icon-img">
+        <svg viewBox="0 0 48 48" width="48" height="48">
+          <rect x="2" y="2" width="44" height="44" rx="2" fill="#c4c4c4" stroke="#888" stroke-width="1"/>
+          <rect x="6" y="8" width="36" height="8" fill="#333"/>
+          <rect x="6" y="8" width="24" height="8" fill="#2255cc"/>
+          <rect x="6" y="20" width="36" height="8" fill="#333"/>
+          <rect x="6" y="20" width="12" height="8" fill="#cc2222"/>
+          <rect x="18" y="20" width="8" height="8" fill="#22cc22"/>
+          <rect x="6" y="32" width="36" height="8" fill="#333"/>
+          <rect x="6" y="32" width="18" height="8" fill="#cccc22"/>
+        </svg>
+      </div>
+      <span class="desktop-icon-label">gr_osview</span>
+    </div>
+    <div class="desktop-icon" ondblclick="openApp('about')">
+      <div class="desktop-icon-img">
+        <svg viewBox="0 0 48 48" width="48" height="48">
+          <rect x="4" y="4" width="40" height="40" rx="3" fill="#2a2a6e" stroke="#4a4a9e" stroke-width="1.5"/>
+          <g transform="translate(11,8) scale(0.55)">
+            <polygon points="40,0 80,20 80,60 40,80 0,60 0,20" fill="none" stroke="#666" stroke-width="1"/>
+            <polygon points="40,0 80,20 40,40 0,20" fill="#e44"/>
+            <polygon points="0,20 40,40 40,80 0,60" fill="#4a4"/>
+            <polygon points="40,40 80,20 80,60 40,80" fill="#44e"/>
+          </g>
+          <text x="24" y="42" text-anchor="middle" fill="#ccc" font-family="Helvetica" font-size="5">Welcome to SGI</text>
+        </svg>
+      </div>
+      <span class="desktop-icon-label">Welcome to SGI</span>
+    </div>
+    <div class="desktop-icon">
+      <div class="desktop-icon-img">
+        <svg viewBox="0 0 48 48" width="48" height="48">
+          <rect x="10" y="8" width="28" height="4" rx="1" fill="#888" stroke="#666" stroke-width="1"/>
+          <path d="M 8 12 L 12 44 L 36 44 L 40 12 Z" fill="#999" stroke="#666" stroke-width="1"/>
+          <line x1="18" y1="16" x2="17" y2="40" stroke="#777" stroke-width="1.5"/>
+          <line x1="24" y1="16" x2="24" y2="40" stroke="#777" stroke-width="1.5"/>
+          <line x1="30" y1="16" x2="31" y2="40" stroke="#777" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <span class="desktop-icon-label">Dumpster</span>
+    </div>
+  </div>
+  <div id="context-menu"></div>
+  <div id="polybar">
+    <div id="polybar-left">
+      <div class="polybar-sgi-logo" title="SGI IRIX 6.5" onclick="openApp('about')">
+        <svg width="18" height="18" viewBox="0 0 120 120">
+          <g transform="translate(20,15)">
+            <polygon points="40,0 80,20 40,40 0,20" fill="#e44"/>
+            <polygon points="0,20 40,40 40,80 0,60" fill="#4a4"/>
+            <polygon points="40,40 80,20 80,60 40,80" fill="#44e"/>
+          </g>
+        </svg>
+      </div>
+      <div class="polybar-divider"></div>
+    </div>
+    <div id="polybar-windows"></div>
+    <div id="polybar-right">
+      <div class="polybar-divider"></div>
+      <div id="polybar-clock"></div>
+    </div>
+  </div>
+</div>
+<script>
+const bootMessages = [
+  'PROM Monitor SGI Version 6.5','',
+  'System Maintenance Menu','',
+  'Starting up the system...','',
+  'IRIX Release 6.5 IP32 Version 01090133',
+  'Copyright 1987-1999 Silicon Graphics, Inc. All Rights Reserved.','',
+  'CPU: MIPS R5000 Processor Chip Revision: 2.1',
+  'FPU: MIPS R5000 Floating Point Coprocessor Revision: 1.0',
+  '1 180 MHZ IP32 Processor',
+  'Main memory size: 192 Mbytes',
+  'Instruction cache size: 32 Kbytes',
+  'Data cache size: 32 Kbytes',
+  'Secondary unified instruction/data cache size: 512 Kbytes','',
+  'CRM graphics installed',
+  'Integral SCSI controller 0: Version ADAPTEC 7880',
+  'Integral Ethernet: ec0, version 1',
+  'Iris Audio Processor: version A3 revision 0','',
+  'Configuring kernel...',
+  'Starting network daemons: inetd routed named.',
+  'Starting NFS daemons: nfsd mountd.',
+  'Starting system logger.',
+  'Starting cron daemon.',
+  'Starting mediad.',
+  'Starting objectserver.',
+  'Starting fam (File Alteration Monitor).','',
+  'Starting Indigo Magic Desktop...',
+  'Starting 4Dwm window manager...','',
+  'login: guest',
+  'IRIX 6.5 IRIS',
+  'Last login: Sat Feb 28 09:14:22 PST 2026 on :0','',
+  'Welcome to SGI IRIX 6.5',
+];
+let bootIndex=0;
+const bootTextEl=document.getElementById('boot-text');
+const bootSplash=document.getElementById('boot-splash');
+const STORAGE_KEY='irix_desktop_state';
+const BOOT_KEY='irix_last_boot';
+const BOOT_COOLDOWN=60*60*1000;
+function saveState(){const state={windows:{},activeWinId:null};Object.keys(windows).forEach(id=>{const win=windows[id];if(!win)return;state.windows[id]={title:win.dataset.title,left:win.style.left,top:win.style.top,width:win.style.width,height:win.style.height,minimized:win.classList.contains('minimized'),maximized:win.classList.contains('maximized'),zIndex:parseInt(win.style.zIndex)||100};if(win.classList.contains('maximized')&&win._savedPos)state.windows[id].savedPos=win._savedPos;});if(activeWindow&&activeWindow.dataset)state.activeWinId=activeWindow.dataset.winId;try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function loadState(){try{const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return null;return JSON.parse(raw);}catch(e){return null;}}
+function shouldShowBoot(){try{const last=localStorage.getItem(BOOT_KEY);if(!last)return true;return(Date.now()-parseInt(last))>BOOT_COOLDOWN;}catch(e){return true;}}
+function markBootShown(){try{localStorage.setItem(BOOT_KEY,String(Date.now()));}catch(e){}}
+setInterval(saveState,3000);
+window.addEventListener('beforeunload',saveState);
+function showDesktop(restoreWindows){document.getElementById('desktop').style.display='';drawDesktopBackground();updatePolybarClock();if(restoreWindows){const state=loadState();if(state&&state.windows&&Object.keys(state.windows).length>0){const sorted=Object.entries(state.windows).sort((a,b)=>(a[1].zIndex||0)-(b[1].zIndex||0));sorted.forEach(([id,wState])=>{openApp(id);const win=windows[id];if(!win)return;if(!wState.maximized){win.style.left=wState.left;win.style.top=wState.top;win.style.width=wState.width;win.style.height=wState.height;}if(wState.maximized){if(wState.savedPos)win._savedPos=wState.savedPos;if(!win.classList.contains('maximized'))toggleMaximize(win);}if(wState.minimized)minimizeWindow(win);});if(state.activeWinId&&windows[state.activeWinId]){const aw=windows[state.activeWinId];if(!aw.classList.contains('minimized'))bringToFront(aw);}}else{openDefaultApps();}}else{setTimeout(openDefaultApps,300);}updatePolybar();}
+function openDefaultApps(){openApp('terminal');openApp('osview');openApp('fm');setTimeout(()=>{const termContent=document.getElementById('term-content');const termInput=document.getElementById('term-input');if(termContent&&termInput){const inputLine=termInput.closest('.terminal-input-line');const executedLine=document.createElement('div');executedLine.className='terminal-line';executedLine.textContent=getPrompt()+'vi';inputLine.before(executedLine);termCmdCount++;openViEditor('',termContent,termInput);}},100);setTimeout(()=>{openApp('browser');const blogUrl=getBlogUrl();browserGo(blogUrl);},120);setTimeout(()=>{openApp('about');updatePolybar();},200);}
+let windowZIndex=100,activeWindow=null;
+const windows={};
+let dragState=null,resizeState=null;
+function createWindow(id,title,x,y,w,h,contentHTML,opts={}){if(windows[id]){const win=windows[id];if(win.classList.contains('minimized'))win.classList.remove('minimized');bringToFront(win);return win;}const win=document.createElement('div');win.className='window active';win.id='win-'+id;win.dataset.winId=id;win.dataset.title=title;win.style.left=x+'px';win.style.top=y+'px';win.style.width=w+'px';win.style.height=h+'px';win.style.zIndex=++windowZIndex;const menubar=opts.menubar||'';win.innerHTML=`<div class="window-titlebar"><div class="titlebar-btn btn-menu" title="Window Menu"></div><div class="window-title">${title}</div><div class="titlebar-btn btn-minimize" title="Minimize"></div><div class="titlebar-btn btn-maximize" title="Maximize"></div></div>${menubar?`<div class="window-menubar">${menubar}</div>`:''}<div class="window-body"><div class="window-content">${contentHTML}</div></div><div class="window-resize"></div>`;document.getElementById('desktop').appendChild(win);windows[id]=win;const titlebar=win.querySelector('.window-titlebar');titlebar.addEventListener('mousedown',(e)=>{if(e.target.classList.contains('titlebar-btn'))return;bringToFront(win);dragState={win,startX:e.clientX-win.offsetLeft,startY:e.clientY-win.offsetTop};e.preventDefault();});titlebar.addEventListener('dblclick',(e)=>{if(e.target.classList.contains('titlebar-btn'))return;toggleMaximize(win);});win.querySelector('.btn-minimize').addEventListener('click',()=>minimizeWindow(win));win.querySelector('.btn-maximize').addEventListener('click',()=>toggleMaximize(win));win.querySelector('.btn-menu').addEventListener('dblclick',()=>closeWindow(id));win.querySelector('.window-resize').addEventListener('mousedown',(e)=>{bringToFront(win);resizeState={win,startX:e.clientX,startY:e.clientY,startW:win.offsetWidth,startH:win.offsetHeight};e.preventDefault();e.stopPropagation();});win.addEventListener('mousedown',()=>bringToFront(win));bringToFront(win);saveState();return win;}
+function bringToFront(win){if(activeWindow&&activeWindow!==win)activeWindow.classList.remove('active');win.classList.add('active');win.style.zIndex=++windowZIndex;activeWindow=win;updatePolybar();}
+function sendToBack(win){let lowestZ=Infinity;Object.values(windows).forEach(w=>{if(w&&w!==win&&!w.classList.contains('minimized')){const z=parseInt(w.style.zIndex)||100;if(z<lowestZ)lowestZ=z;}});if(lowestZ===Infinity)return;win.style.zIndex=lowestZ-1;win.classList.remove('active');let topWin=null,topZ=-1;Object.values(windows).forEach(w=>{if(w&&w!==win&&!w.classList.contains('minimized')){const z=parseInt(w.style.zIndex)||100;if(z>topZ){topZ=z;topWin=w;}}});if(topWin){topWin.classList.add('active');activeWindow=topWin;}else activeWindow=null;updatePolybar();saveState();}
+function minimizeWindow(win){win.classList.add('minimized');win.classList.remove('active');if(activeWindow===win)activeWindow=null;updatePolybar();saveState();}
+function toggleMaximize(win){if(win.classList.contains('maximized')){win.classList.remove('maximized');if(win._savedPos){win.style.left=win._savedPos.left;win.style.top=win._savedPos.top;win.style.width=win._savedPos.width;win.style.height=win._savedPos.height;}}else{win._savedPos={left:win.style.left,top:win.style.top,width:win.style.width,height:win.style.height};win.classList.add('maximized');}saveState();}
+function closeWindow(id){const win=windows[id];if(win){win.remove();delete windows[id];if(activeWindow===win)activeWindow=null;if(id==='osview'&&osviewInterval){clearInterval(osviewInterval);osviewInterval=null;}updatePolybar();saveState();}}
+function updatePolybar(){const container=document.getElementById('polybar-windows');if(!container)return;container.innerHTML='';Object.keys(windows).forEach(id=>{const win=windows[id];if(!win)return;const btn=document.createElement('div');btn.className='polybar-window-btn';if(win===activeWindow&&!win.classList.contains('minimized'))btn.classList.add('active-win');if(win.classList.contains('minimized'))btn.classList.add('minimized-win');btn.textContent=win.dataset.title||id;btn.addEventListener('click',()=>{if(win.classList.contains('minimized'))win.classList.remove('minimized');bringToFront(win);updatePolybar();});container.appendChild(btn);});}
+function updatePolybarClock(){const el=document.getElementById('polybar-clock');if(!el)return;const now=new Date();const h=now.getHours(),m=String(now.getMinutes()).padStart(2,'0');const ampm=h>=12?'PM':'AM',h12=h%12||12;const mon=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][now.getMonth()];el.textContent=`${mon} ${now.getDate()}  ${h12}:${m} ${ampm}`;}
+setInterval(updatePolybarClock,10000);
+document.addEventListener('mousemove',(e)=>{if(dragState){const{win,startX,startY}=dragState;if(win.classList.contains('maximized'))return;win.style.left=(e.clientX-startX)+'px';win.style.top=(e.clientY-startY)+'px';}if(resizeState){const{win,startX,startY,startW,startH}=resizeState;win.style.width=Math.max(200,startW+(e.clientX-startX))+'px';win.style.height=Math.max(100,startH+(e.clientY-startY))+'px';}});
+document.addEventListener('mouseup',()=>{if(dragState||resizeState)saveState();dragState=null;resizeState=null;});
+let openMenu=null,toolchestCollapsed=false;
+document.getElementById('toolchest-toggle').addEventListener('click',(e)=>{e.stopPropagation();closeAllMenus();toolchestCollapsed=!toolchestCollapsed;const items=document.getElementById('toolchest-items');toolchestCollapsed?items.classList.add('collapsed'):items.classList.remove('collapsed');try{localStorage.setItem('irix_toolchest_collapsed',toolchestCollapsed?'1':'0');}catch(e){}});
+try{if(localStorage.getItem('irix_toolchest_collapsed')==='1'){toolchestCollapsed=true;document.getElementById('toolchest-items').classList.add('collapsed');}}catch(e){}
+document.querySelectorAll('.toolchest-btn').forEach(btn=>{btn.addEventListener('click',(e)=>{e.stopPropagation();const menu=document.getElementById(btn.dataset.menu);if(openMenu===menu){closeAllMenus();return;}closeAllMenus();const rect=btn.getBoundingClientRect();menu.style.left=rect.right+'px';menu.style.top=rect.top+'px';menu.classList.add('visible');btn.classList.add('active');openMenu=menu;});});
+function closeAllMenus(){document.querySelectorAll('.toolchest-menu').forEach(m=>m.classList.remove('visible'));document.querySelectorAll('.toolchest-btn').forEach(b=>b.classList.remove('active'));openMenu=null;}
+document.addEventListener('click',(e)=>{if(!e.target.closest('.toolchest-btn')&&!e.target.closest('.toolchest-menu'))closeAllMenus();const ctx=document.getElementById('context-menu');if(!e.target.closest('#context-menu'))ctx.classList.remove('visible');});
+document.addEventListener('contextmenu',(e)=>{e.preventDefault();closeAllMenus();const ctx=document.getElementById('context-menu');ctx.innerHTML='';ctx.classList.remove('visible');const clickedWindow=e.target.closest('.window');const clickedIcon=e.target.closest('.desktop-icon');if(clickedWindow){const winId=clickedWindow.dataset.winId;const winTitle=clickedWindow.dataset.title||winId;const header=document.createElement('div');header.className='menu-header';header.textContent=winTitle;ctx.appendChild(header);addMenuItem(ctx,'Close',()=>closeWindow(winId));addMenuSeparator(ctx);addMenuItem(ctx,'Minimize',()=>minimizeWindow(clickedWindow));addMenuItem(ctx,clickedWindow.classList.contains('maximized')?'Restore':'Maximize',()=>toggleMaximize(clickedWindow));addMenuItem(ctx,'Send to Back',()=>sendToBack(clickedWindow));addMenuSeparator(ctx);addMenuItem(ctx,'Refresh',null,true);addMenuItem(ctx,'Properties...',null,true);}else if(clickedIcon){const label=clickedIcon.querySelector('.desktop-icon-label')?.textContent||'Item';const header=document.createElement('div');header.className='menu-header';header.textContent=label;ctx.appendChild(header);addMenuItem(ctx,'Open',()=>{const dblEvt=new MouseEvent('dblclick',{bubbles:true});clickedIcon.dispatchEvent(dblEvt);});addMenuSeparator(ctx);addMenuItem(ctx,'Get Info',null,true);addMenuItem(ctx,'Copy',null,true);addMenuItem(ctx,'Move to Dumpster',null,true);}else if(e.target.closest('#polybar')||e.target.closest('#toolchest')){return;}else{const header=document.createElement('div');header.className='menu-header';header.textContent='IRIX Desktop';ctx.appendChild(header);addMenuItem(ctx,'Open Unix Shell',()=>openApp('terminal'));addMenuItem(ctx,'Open File Manager',()=>openApp('fm'));addMenuItem(ctx,'System Monitor',()=>openApp('osview'));addMenuSeparator(ctx);addMenuItem(ctx,'Arrange Icons',null,true);addMenuItem(ctx,'Clean Up Desktop',null,true);addMenuSeparator(ctx);addMenuItem(ctx,'About This System',()=>openApp('about'));addMenuItem(ctx,'Desktop Settings...',null,true);}let x=e.clientX,y=e.clientY;ctx.classList.add('visible');const rect=ctx.getBoundingClientRect();if(x+rect.width>window.innerWidth)x=window.innerWidth-rect.width-4;if(y+rect.height>window.innerHeight)y=window.innerHeight-rect.height-4;ctx.style.left=x+'px';ctx.style.top=y+'px';});
+function addMenuItem(parent,label,action,disabled){const item=document.createElement('div');item.className='menu-item'+(disabled?' disabled':'');item.textContent=label;if(action&&!disabled)item.addEventListener('click',()=>{document.getElementById('context-menu').classList.remove('visible');action();});parent.appendChild(item);}
+function addMenuSeparator(parent){const sep=document.createElement('div');sep.className='menu-separator';parent.appendChild(sep);}
+const FS_STORAGE_KEY='irix_filesystem';
+const baseFilesystem={
+  '/':{type:'dir',children:['bin','dev','etc','home','tmp','usr','var','proc']},
+  '/bin':{type:'dir',children:['sh','ls','cat','pwd','cp','mv','rm','mkdir','echo','grep','uname','hinv','date','clear','hostname','whoami','id','ps','kill','df','vi','touch']},
+  '/dev':{type:'dir',children:['null','zero','console','tty','scsi']},
+  '/etc':{type:'dir',children:['hosts','passwd','motd','resolv.conf','sys_id','config']},
+  '/etc/hosts':{type:'file',content:'127.0.0.1\tlocalhost\n127.0.0.1\tIRIS\n::1\t\tlocalhost'},
+  '/etc/passwd':{type:'file',content:'root:x:0:0:Super-User:/root:/bin/sh\nnobody:x:60001:60001:Nobody:/:\nguest:x:1001:100:Guest User:/home/guest:/bin/sh\nsgi:x:1002:100:SGI User:/home/sgi:/bin/sh'},
+  '/etc/motd':{type:'file',content:'IRIX Release 6.5 IP32\nCopyright 1987-1999 Silicon Graphics, Inc.\nAll Rights Reserved.\n\nWelcome to the Indigo Magic Desktop.'},
+  '/etc/resolv.conf':{type:'file',content:'nameserver 127.0.0.1\ndomain sgi.local'},
+  '/etc/sys_id':{type:'file',content:'IRIS'},
+  '/etc/config':{type:'dir',children:['system.glGLSL','network','display']},
+  '/home':{type:'dir',children:['guest']},
+  '/home/guest':{type:'dir',children:['.profile','.cshrc','.sgisession','Documents','Desktop']},
+  '/home/guest/.profile':{type:'file',content:'# .profile\nexport PATH=/usr/bin:/bin:/usr/sbin:/usr/local/bin\nexport SHELL=/bin/sh\nexport DISPLAY=:0.0\nexport TERM=iris-ansi\numask 022'},
+  '/home/guest/.cshrc':{type:'file',content:'# .cshrc for IRIX 6.5\nset path = (/usr/bin /bin /usr/sbin /usr/local/bin)\nsetenv DISPLAY :0.0\nsetenv TERM iris-ansi\nset prompt = "IRIS %d%% "'},
+  '/home/guest/.sgisession':{type:'file',content:'# SGI Session Configuration\nwindowManager: /usr/bin/X11/4Dwm\ndesktop: IndigoMagic\ncolorscheme: default'},
+  '/home/guest/Documents':{type:'dir',children:['readme.txt','notes.txt']},
+  '/home/guest/Documents/readme.txt':{type:'file',content:'Welcome to IRIX 6.5\n\nThis Silicon Graphics workstation is configured with the\nIndigo Magic Desktop environment.\n\nFor help, open the Toolchest and select Help.\nFor system information, run "hinv" in a terminal.'},
+  '/home/guest/Documents/notes.txt':{type:'file',content:'SGI O2 Workstation Notes\n========================\n\n- MIPS R5000 @ 180MHz\n- 192MB RAM\n- CRM Graphics\n- IRIX 6.5\n\nInstalled Software:\n- 4Dwm Window Manager\n- Netscape Navigator\n- gr_osview System Monitor\n- IRIS File Manager'},
+  '/home/guest/Desktop':{type:'dir',children:['Unix Shell','File Manager','Netscape','gr_osview','Welcome to SGI']},
+  '/tmp':{type:'dir',children:['.X0-lock','.font-unix']},
+  '/usr':{type:'dir',children:['bin','lib','local','share','sbin']},
+  '/usr/bin':{type:'dir',children:['X11','xwsh','netscape','fm','osview','gr_osview','insight','4Dwm','toolchest','mediad','fam','objectserver']},
+  '/usr/lib':{type:'dir',children:['libGL.so','libGLU.so','libX11.so','libXm.so','libc.so.1','libdmedia.so']},
+  '/usr/local':{type:'dir',children:['bin','lib']},
+  '/usr/local/bin':{type:'dir',children:[]},
+  '/usr/local/lib':{type:'dir',children:[]},
+  '/usr/share':{type:'dir',children:['man','catman']},
+  '/usr/sbin':{type:'dir',children:['ping','ifconfig','mount','syslogd','inetd','crond']},
+  '/var':{type:'dir',children:['log','tmp','spool']},
+  '/var/log':{type:'dir',children:['SYSLOG','messages']},
+  '/var/log/SYSLOG':{type:'file',content:'Feb 28 09:14:00 IRIS syslogd: restart\nFeb 28 09:14:01 IRIS inetd[142]: starting\nFeb 28 09:14:02 IRIS mediad[156]: started\nFeb 28 09:14:03 IRIS fam[160]: started\nFeb 28 09:14:03 IRIS objectserver[165]: started\nFeb 28 09:14:04 IRIS 4Dwm[180]: starting window manager\nFeb 28 09:14:05 IRIS toolchest[185]: loading desktop'},
+  '/proc':{type:'dir',children:['0','1','142','156','160','165','180','185']},
+};
+function initFilesystem(){const fs=JSON.parse(JSON.stringify(baseFilesystem));try{const saved=localStorage.getItem(FS_STORAGE_KEY);if(saved){const userFiles=JSON.parse(saved);Object.keys(userFiles).forEach(path=>{fs[path]=userFiles[path];const parts=path.split('/').filter(Boolean);if(parts.length>1){const parentPath='/'+parts.slice(0,-1).join('/');const childName=parts[parts.length-1];if(fs[parentPath]&&fs[parentPath].type==='dir'&&!fs[parentPath].children.includes(childName))fs[parentPath].children.push(childName);}});}}catch(e){}return fs;}
+let filesystem=initFilesystem();
+function saveFilesystem(){const userFiles={};Object.keys(filesystem).forEach(path=>{const base=baseFilesystem[path],current=filesystem[path];if(!base){userFiles[path]=current;}else if(current.type==='file'&&base.type==='file'&&current.content!==base.content){userFiles[path]=current;}else if(current.type==='dir'&&base.type==='dir'){if(JSON.stringify([...base.children].sort())!==JSON.stringify([...current.children].sort()))userFiles[path]=current;}});try{localStorage.setItem(FS_STORAGE_KEY,JSON.stringify(userFiles));}catch(e){}}
+let cwd='/home/guest';
+const hostname='IRIS',username='guest';
+function resolvePath(path){if(!path.startsWith('/'))path=cwd+'/'+path;const parts=path.split('/').filter(Boolean),resolved=[];for(const p of parts){if(p==='..')resolved.pop();else if(p!=='.')resolved.push(p);}return'/'+resolved.join('/')||'/';}
+function getPrompt(){let displayCwd=cwd;if(cwd==='/home/guest')displayCwd='~';else if(cwd.startsWith('/home/guest/'))displayCwd='~'+cwd.slice(11);return`${username}@${hostname}:${displayCwd}> `;}
+let termCmdCount=1;
+function executeCommand(input){const args=input.trim().split(/\s+/),cmd=args[0],params=args.slice(1);if(!cmd)return'';switch(cmd){case'ls':return cmdLs(params);case'cd':return cmdCd(params);case'pwd':return cwd;case'cat':return cmdCat(params);case'echo':return params.join(' ');case'whoami':return username;case'hostname':return hostname;case'id':return`uid=1001(guest) gid=100(users) groups=100(users)`;case'uname':return cmdUname(params);case'hinv':return cmdHinv();case'date':return new Date().toString();case'clear':return'\x0C';case'ps':return cmdPs();case'df':return cmdDf();case'uptime':return cmdUptime();case'help':return'Available commands: ls, cd, pwd, cat, echo, whoami, hostname, id,\nuname, hinv, date, clear, ps, df, uptime, ip, env, history, vi,\ntouch, mkdir, rm, cp, mv, grep, head, tail, mount, ping, exit, help';case'ip':return cmdIp(params);case'ifconfig':return cmdIfconfig();case'env':return cmdEnv();case'history':return cmdHistory();case'vi':case'vim':return cmdVi(params);case'exit':return'logout\n[Connection closed]';case'man':return params.length?`No manual entry for ${params[0]}.`:'What manual page do you want?';case'mkdir':return cmdMkdir(params);case'touch':return cmdTouch(params);case'rm':return cmdRm(params);case'cp':return params.length>=2?'':'usage: cp source target';case'mv':return params.length>=2?'':'usage: mv source target';case'grep':return params.length?'':'usage: grep pattern [file ...]';case'head':return params.length?cmdCat([params[params.length-1]]).split('\n').slice(0,10).join('\n'):'';case'tail':return params.length?cmdCat([params[params.length-1]]).split('\n').slice(-10).join('\n'):'';case'wc':return'  0  0  0';case'kill':return params.length?'':'usage: kill [-signal] pid ...';case'mount':return'/dev/dsk/dks0d1s0 on / type efs (rw)\nproc on /proc type proc (rw)';case'ping':return params.length?`PING ${params[0]}: 56 data bytes\n64 bytes from ${params[0]}: icmp_seq=0 ttl=255 time=0.1 ms\n--- ${params[0]} ping statistics ---\n1 packets transmitted, 1 packets received, 0% packet loss`:'usage: ping host';case'netscape':case'browser':openApp('browser');return'Starting Netscape Navigator...';case'fm':openApp('fm');return'Starting File Manager...';case'osview':case'gr_osview':openApp('osview');return'Starting gr_osview...';default:if(filesystem['/bin']?.children.includes(cmd)||filesystem['/usr/bin']?.children.includes(cmd))return`${cmd}: operation not implemented in simulation`;return`${cmd}: Command not found.`;}}
+function cmdLs(params){let target=cwd,showAll=false,longFormat=false;for(const p of params){if(p.startsWith('-')){if(p.includes('a'))showAll=true;if(p.includes('l'))longFormat=true;}else target=resolvePath(p);}const node=filesystem[target];if(!node)return`ls: ${target}: No such file or directory`;if(node.type!=='dir')return target.split('/').pop();let items=[...node.children];if(showAll)items=['.','..', ...items];if(longFormat){return items.map(name=>{const fullPath=target==='/'?'/'+name:target+'/'+name;const child=filesystem[fullPath];const isDir=child?child.type==='dir':name==='.'||name==='..';const size=child&&child.content?child.content.length:(isDir?4096:0);return`${isDir?'drwxr-xr-x':'-rw-r--r--'}  1 guest users  ${String(size).padStart(6)}  Feb 28 09:14  ${name}`;}).join('\n');}return items.join('  ');}
+function cmdCd(params){if(!params.length||params[0]==='~'){cwd='/home/guest';return'';}let target=resolvePath(params[0]==='~'?'/home/guest':params[0]);const node=filesystem[target];if(!node)return`cd: ${params[0]}: No such file or directory`;if(node.type!=='dir')return`cd: ${params[0]}: Not a directory`;cwd=target;return'';}
+function cmdCat(params){if(!params.length)return'';const path=resolvePath(params[0]),node=filesystem[path];if(!node)return`cat: ${params[0]}: No such file or directory`;if(node.type==='dir')return`cat: ${params[0]}: Is a directory`;return node.content||'';}
+function cmdUname(params){if(!params.length)return'IRIX';const flags=params.join('');if(flags.includes('a')||flags.includes('-a'))return'IRIX IRIS 6.5 01090133 IP32';let result=[];if(flags.includes('s'))result.push('IRIX');if(flags.includes('n'))result.push('IRIS');if(flags.includes('r'))result.push('6.5');if(flags.includes('v'))result.push('01090133');if(flags.includes('m'))result.push('IP32');return result.join(' ')||'IRIX';}
+function cmdHinv(){return`CPU: MIPS R5000 Processor Chip Revision: 2.1\nFPU: MIPS R5000 Floating Point Coprocessor Revision: 1.0\n1 180 MHZ IP32 Processor\nMain memory size: 192 Mbytes\nSecondary unified instruction/data cache size: 512 Kbytes on Processor 0\nInstruction cache size: 32 Kbytes\nData cache size: 32 Kbytes\nFLASH PROM version 4.18\nIntegral SCSI controller 0: Version ADAPTEC 7880\n  Disk drive: unit 1 on SCSI controller 0\nIntegral SCSI controller 1: Version ADAPTEC 7880\nOn-board serial ports: tty1\nOn-board serial ports: tty2\nOn-board EPP/ECP parallel port\nCRM graphics installed\nIntegral Ethernet: ec0, version 1\nIris Audio Processor: version A3 revision 0\nVideo: MVP unit 0 version 1.4\nAV: AV1 Card version 1, Camera not connected.\nVice: TRE`;}
+function cmdPs(){return`  PID TTY      TIME CMD\n    1 ?      0:01 init\n  142 ?      0:00 inetd\n  156 ?      0:00 mediad\n  160 ?      0:00 fam\n  165 ?      0:00 objectserver\n  180 ?      0:02 4Dwm\n  185 ?      0:00 toolchest\n  200 ?      0:01 Xsgi\n  210 pts/0  0:00 xwsh\n  ${211+Math.floor(Math.random()*10)} pts/0  0:00 ps`;}
+function cmdDf(){return`Filesystem          Type  blocks     use    avail  %use  Mounted on\n/dev/dsk/dks0d1s0    efs  4185272  2847932  1337340   68%  /\n/proc                proc       0        0        0    0%  /proc`;}
+function cmdUptime(){const h=Math.floor(Math.random()*24),m=Math.floor(Math.random()*60);return` ${new Date().toLocaleTimeString()} up ${h}:${String(m).padStart(2,'0')},  1 user,  load average: 0.${Math.floor(Math.random()*30)}, 0.${Math.floor(Math.random()*20)}, 0.${Math.floor(Math.random()*15)}`;}
+function cmdIp(params){if(!params.length||params[0]==='addr'||params[0]==='a'){return`1: lo: <LOOPBACK,UP,LOWER_UP> mtu 16384\n    inet 127.0.0.1/8 scope host lo\n    inet6 ::1/128 scope host\n2: ec0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500\n    inet 192.168.1.42/24 brd 192.168.1.255 scope global ec0\n    inet6 fe80::1/64 scope link`;}if(params[0]==='route'||params[0]==='r')return`default via 192.168.1.1 dev ec0\n192.168.1.0/24 dev ec0 scope link`;return`Usage: ip [ addr | route ]`;}
+function cmdIfconfig(){return`ec0: flags=863<UP,BROADCAST,NOTRAILERS,RUNNING,MULTICAST>\n        inet 192.168.1.42 netmask 0xffffff00 broadcast 192.168.1.255\n        ether 08:00:69:12:34:56\n\nlo0: flags=849<UP,LOOPBACK,RUNNING,MULTICAST>\n        inet 127.0.0.1 netmask 0xff000000`;}
+function cmdEnv(){return`USER=guest\nHOME=/home/guest\nSHELL=/bin/sh\nTERM=iris-ansi\nDISPLAY=:0.0\nPATH=/usr/bin:/bin:/usr/sbin:/usr/local/bin\nHOSTNAME=IRIS\nLOGNAME=guest\nLANG=C\nTZ=US/Pacific\nWINDOWID=0x1600003\nXAUTHORITY=/home/guest/.Xauthority`;}
+const commandHistory=[];
+function cmdHistory(){return commandHistory.map((c,i)=>`  ${i+1}  ${c}`).join('\n');}
+function cmdMkdir(params){if(!params.length)return'usage: mkdir directory ...';for(const p of params){const path=resolvePath(p);if(filesystem[path])return`mkdir: ${p}: File exists`;filesystem[path]={type:'dir',children:[]};const parts=path.split('/').filter(Boolean),childName=parts.pop();const parentPath='/'+parts.join('/')||'/';if(filesystem[parentPath]?.type==='dir'&&!filesystem[parentPath].children.includes(childName))filesystem[parentPath].children.push(childName);}saveFilesystem();return'';}
+function cmdTouch(params){if(!params.length)return'usage: touch file ...';for(const p of params){const path=resolvePath(p);if(!filesystem[path]){filesystem[path]={type:'file',content:''};const parts=path.split('/').filter(Boolean),childName=parts.pop();const parentPath='/'+parts.join('/')||'/';if(filesystem[parentPath]?.type==='dir'&&!filesystem[parentPath].children.includes(childName))filesystem[parentPath].children.push(childName);}}saveFilesystem();return'';}
+function cmdRm(params){if(!params.length)return'usage: rm [-fiRr] file ...';const flags=params.filter(p=>p.startsWith('-')).join('');const files=params.filter(p=>!p.startsWith('-'));for(const p of files){const path=resolvePath(p),node=filesystem[path];if(!node)return`rm: ${p}: No such file or directory`;if(node.type==='dir'&&!flags.includes('r')&&!flags.includes('R'))return`rm: ${p}: is a directory`;delete filesystem[path];const parts=path.split('/').filter(Boolean),childName=parts.pop();const parentPath='/'+parts.join('/')||'/';if(filesystem[parentPath]?.type==='dir')filesystem[parentPath].children=filesystem[parentPath].children.filter(c=>c!==childName);}saveFilesystem();return'';}
+function cmdVi(params){if(!params.length)return'\x1BVI_OPEN\x1B';return'\x1BVI_OPEN\x1B'+params[0];}
+const AVAILABLE_COMMANDS=['ls','cd','pwd','cat','echo','whoami','hostname','id','uname','hinv','date','clear','ps','df','uptime','help','ip','ifconfig','env','history','vi','vim','exit','man','mkdir','touch','rm','cp','mv','grep','head','tail','wc','kill','mount','ping','netscape','browser','fm','osview','gr_osview'];
+function tabComplete(inputValue){const parts=inputValue.split(/\s+/);if(parts.length<=1){const partial=parts[0]||'';return{matches:AVAILABLE_COMMANDS.filter(c=>c.startsWith(partial)),replaceFrom:0,prefix:''};}const partial=parts[parts.length-1];let dirPath,namePrefix,displayPrefix;let expandedPartial=partial;if(expandedPartial.startsWith('~/'))expandedPartial='/home/guest/'+expandedPartial.slice(2);else if(expandedPartial==='~')expandedPartial='/home/guest';if(expandedPartial.includes('/')){const lastSlash=expandedPartial.lastIndexOf('/');dirPath=expandedPartial.slice(0,lastSlash)||'/';if(!dirPath.startsWith('/'))dirPath=resolvePath(dirPath);namePrefix=expandedPartial.slice(lastSlash+1);displayPrefix=partial.slice(0,partial.lastIndexOf('/')+1);}else{dirPath=cwd;namePrefix=expandedPartial;displayPrefix='';}const node=filesystem[dirPath];if(!node||node.type!=='dir')return{matches:[],replaceFrom:0,prefix:''};const matches=node.children.filter(c=>c.startsWith(namePrefix)).map(c=>{const fullPath=dirPath==='/'?'/'+c:dirPath+'/'+c;return displayPrefix+c+(filesystem[fullPath]?.type==='dir'?'/':'');});const beforeArg=inputValue.slice(0,inputValue.length-partial.length);return{matches,replaceFrom:beforeArg.length,prefix:beforeArg};}
+function openTerminal(){const existing=windows['terminal'];if(existing){if(existing.classList.contains('minimized'))existing.classList.remove('minimized');bringToFront(existing);const inp=existing.querySelector('.terminal-input');if(inp)inp.focus();return;}const termHTML=`<div class="terminal-container" id="term-content" tabindex="0"><div class="terminal-line">IRIX Release 6.5 IP32</div><div class="terminal-line">Copyright 1987-1999 Silicon Graphics, Inc. All Rights Reserved.</div><div class="terminal-line"> </div><div class="terminal-input-line"><span class="terminal-prompt" id="term-prompt">${getPrompt()}</span><input class="terminal-input" id="term-input" type="text" spellcheck="false" autocomplete="off" autofocus></div></div>`;const dw=window.innerWidth,dh=window.innerHeight;const w=Math.min(680,dw-40),h=Math.min(420,dh-40);const win=createWindow('terminal','xwsh',Math.max(120,(dw-w)/2-100),Math.max(50,(dh-h)/2-50),w,h,termHTML);const input=document.getElementById('term-input');const content=document.getElementById('term-content');let historyIdx=-1;content.addEventListener('click',()=>input.focus());input.addEventListener('keydown',(e)=>{if(e.key==='Enter'){const cmd=input.value;commandHistory.push(cmd);historyIdx=-1;const hint=content.querySelector('.terminal-tab-hint');if(hint)hint.remove();const inputLine=input.closest('.terminal-input-line');const executedLine=document.createElement('div');executedLine.className='terminal-line';executedLine.textContent=getPrompt()+cmd;inputLine.before(executedLine);const result=executeCommand(cmd);termCmdCount++;if(result==='\x0C'){content.querySelectorAll('.terminal-line, .terminal-tab-hint').forEach(l=>l.remove());}else if(result&&result.startsWith('\x1BVI_OPEN\x1B')){const fname=result.slice(9);openViEditor(fname,content,input);}else if(result){const outputLine=document.createElement('div');outputLine.className='terminal-line';outputLine.textContent=result;inputLine.before(outputLine);}document.getElementById('term-prompt').textContent=getPrompt();input.value='';content.scrollTop=content.scrollHeight;}else if(e.key==='ArrowUp'){e.preventDefault();if(commandHistory.length>0){if(historyIdx===-1)historyIdx=commandHistory.length;historyIdx=Math.max(0,historyIdx-1);input.value=commandHistory[historyIdx];}}else if(e.key==='ArrowDown'){e.preventDefault();if(historyIdx>=0){historyIdx++;if(historyIdx>=commandHistory.length){historyIdx=-1;input.value='';}else input.value=commandHistory[historyIdx];}}else if(e.key==='Tab'){e.preventDefault();const oldHint=content.querySelector('.terminal-tab-hint');if(oldHint)oldHint.remove();const{matches,replaceFrom,prefix}=tabComplete(input.value);if(matches.length===1){input.value=prefix+matches[0];}else if(matches.length>1){let common=matches[0];for(let i=1;i<matches.length;i++){while(!matches[i].startsWith(common))common=common.slice(0,-1);}if(common.length>(input.value.length-replaceFrom))input.value=prefix+common;const hintEl=document.createElement('div');hintEl.className='terminal-tab-hint';hintEl.textContent=matches.join('  ');input.closest('.terminal-input-line').before(hintEl);content.scrollTop=content.scrollHeight;}}});setTimeout(()=>input.focus(),100);}
+function openViEditor(filename, termContent, termInput){
+  let filePath='',displayName=filename||'[No Name]';
+  if(filename){
+    filePath=filename.startsWith('/')?filename:(filename.startsWith('~')?'/home/guest'+filename.slice(1):resolvePath(filename));
+    displayName=filePath.split('/').pop()||filename;
+  }
+  let fileContent='',isNewFile=true;
+  if(filePath&&filesystem[filePath]&&filesystem[filePath].type==='file'){
+    fileContent=filesystem[filePath].content;
+    if(fileContent===undefined||fileContent===null)fileContent='';
+    isNewFile=false;
+  }
+  const viEl=document.createElement('div');
+  viEl.className='vi-container';
+  const viContent=document.createElement('div');
+  viContent.className='vi-content';
+  viContent.setAttribute('contenteditable','true');
+  viContent.setAttribute('spellcheck','false');
+  viContent.setAttribute('tabindex','0');
+  viContent.textContent=fileContent;
+  const viStatus=document.createElement('div');
+  viStatus.className='vi-statusbar';
+  const viStatusLeft=document.createElement('span');
+  const viStatusRight=document.createElement('span');
+  viStatusRight.className='vi-statusbar-right';
+  viStatus.appendChild(viStatusLeft);
+  viStatus.appendChild(viStatusRight);
+  const viCmd=document.createElement('div');
+  viCmd.className='vi-command-line';
+  viCmd.style.display='none';
+  const viCmdInput=document.createElement('input');
+  viCmdInput.className='vi-command-input';
+  viCmd.appendChild(viCmdInput);
+  viEl.appendChild(viContent);
+  viEl.appendChild(viStatus);
+  viEl.appendChild(viCmd);
+  const terminalMode = !!(termContent && termInput);
+  let winId, win;
+  if(terminalMode){
+    const inputLine=termInput.closest('.terminal-input-line');
+    const promptEl=document.getElementById('term-prompt');
+    inputLine.style.display='none';
+    const windowContent=termContent.closest('.window-content');
+    termContent.style.display='none';
+    windowContent.appendChild(viEl);
+    win=windows['terminal'];
+    const origTitle='xwsh';
+    if(win){
+      const titleEl=win.querySelector('.window-title');
+      if(titleEl)titleEl.textContent='vi'+(displayName&&displayName!=='[No Name]'?' - '+displayName:'');
+    }
+    var exitVi=function(){
+      viEl.remove();
+      termContent.style.display='';
+      inputLine.style.display='flex';
+      if(win){const titleEl=win.querySelector('.window-title');if(titleEl)titleEl.textContent=origTitle;}
+      promptEl.textContent=getPrompt();
+      termInput.value='';
+      termInput.focus();
+      termContent.scrollTop=termContent.scrollHeight;
+    };
+  } else {
+    winId='vi-'+Date.now();
+    const winTitle='vi'+(displayName&&displayName!=='[No Name]'?' - '+displayName:'');
+    const dw=window.innerWidth,dh=window.innerHeight;
+    const w=Math.min(680,dw-60),h=Math.min(460,dh-60);
+    win=createWindow(winId,winTitle,
+      Math.max(80,(dw-w)/2+30),Math.max(40,(dh-h)/2),w,h,'<div class="vi-window-host"></div>');
+    const host=win.querySelector('.vi-window-host');
+    host.style.cssText='display:flex;flex-direction:column;height:100%;';
+    host.appendChild(viContent);
+    host.appendChild(viStatus);
+    host.appendChild(viCmd);
+    var exitVi=function(){ closeWindow(winId); };
+  }
+  let mode='normal';
+  function getLineCol(){
+    const sel=window.getSelection();
+    if(!sel.rangeCount)return{line:1,col:1};
+    const range=sel.getRangeAt(0).cloneRange();
+    range.collapse(true);
+    const tmpRange=document.createRange();
+    tmpRange.selectNodeContents(viContent);
+    tmpRange.setEnd(range.startContainer,range.startOffset);
+    const text=tmpRange.toString();
+    const lines=text.split('\n');
+    return{line:lines.length,col:lines[lines.length-1].length+1};
+  }
+  function updateStatus(){
+    const{line,col}=getLineCol();
+    viStatusRight.textContent='line '+line+', col '+col;
+    if(mode==='insert'){
+      viStatusLeft.innerHTML='<span class="vi-statusbar-insert">-- INSERT --</span>';
+    }else if(mode==='command'){
+      viStatusLeft.textContent='';
+    }else{
+      const text=viContent.textContent||'';
+      const lineCount=text?text.split('\n').length:0;
+      if(!filePath)viStatusLeft.textContent='"[No File]" [New File]';
+      else if(isNewFile)viStatusLeft.textContent='"'+displayName+'" [New File]';
+      else viStatusLeft.textContent='"'+displayName+'" '+lineCount+'L, '+text.length+'C';
+    }
+  }
+  function enterNormalMode(){
+    mode='normal';
+    viContent.style.caretColor='transparent';
+    updateStatus();
+  }
+  function enterInsertMode(){
+    mode='insert';
+    viContent.style.caretColor='';
+    viContent.focus();
+    updateStatus();
+  }
+  function saveFile(){
+    if(!filePath){viStatusLeft.textContent='E32: No file name';return false;}
+    const text=viContent.textContent||'';
+    filesystem[filePath]={type:'file',content:text};
+    const parts=filePath.split('/').filter(Boolean),childName=parts.pop();
+    const parentPath='/'+parts.join('/')||'/';
+    if(filesystem[parentPath]?.type==='dir'&&!filesystem[parentPath].children.includes(childName))
+      filesystem[parentPath].children.push(childName);
+    saveFilesystem();
+    isNewFile=false;
+    const lines=text.split('\n');
+    viStatusLeft.textContent='"'+displayName+'" '+lines.length+'L, '+text.length+'C written';
+    return true;
+  }
+  viContent.style.caretColor='transparent';
+  viContent.addEventListener('keydown',(e)=>{
+    if(mode==='normal'){
+      e.preventDefault();
+      if(e.key==='i'){enterInsertMode();}
+      else if(e.key==='a'){
+        enterInsertMode();
+        const sel=window.getSelection();
+        if(sel.rangeCount){const r=sel.getRangeAt(0);r.collapse(false);sel.removeAllRanges();sel.addRange(r);}
+      }else if(e.key==='A'){
+        enterInsertMode();
+        const sel=window.getSelection(),range=document.createRange();
+        range.selectNodeContents(viContent);range.collapse(false);
+        sel.removeAllRanges();sel.addRange(range);
+      }else if(e.key==='o'){
+        enterInsertMode();
+        const sel=window.getSelection(),range=document.createRange();
+        range.selectNodeContents(viContent);range.collapse(false);
+        sel.removeAllRanges();sel.addRange(range);
+        document.execCommand('insertText',false,'\n');
+      }else if(e.key==='O'){
+        enterInsertMode();
+        document.execCommand('insertText',false,'\n');
+        const sel=window.getSelection();
+        if(sel.rangeCount){const r=sel.getRangeAt(0);r.setStart(r.startContainer,Math.max(0,r.startOffset-1));r.collapse(true);sel.removeAllRanges();sel.addRange(r);}
+      }else if(e.key===':'){
+        mode='command';viCmd.style.display='flex';viCmdInput.value=':';viCmdInput.focus();viStatusLeft.textContent='';
+      }else if(e.key==='G'){
+        const sel=window.getSelection(),range=document.createRange();
+        range.selectNodeContents(viContent);range.collapse(false);
+        sel.removeAllRanges();sel.addRange(range);
+        viContent.scrollTop=viContent.scrollHeight;updateStatus();
+      }else if(e.key==='x'){
+        document.execCommand('forwardDelete',false);updateStatus();
+      }else if(e.key==='ArrowUp'||e.key==='k'){
+        const sel=window.getSelection();if(sel.rangeCount){sel.modify('move','backward','line');updateStatus();}
+      }else if(e.key==='ArrowDown'||e.key==='j'){
+        const sel=window.getSelection();if(sel.rangeCount){sel.modify('move','forward','line');updateStatus();}
+      }else if(e.key==='ArrowLeft'||e.key==='h'){
+        const sel=window.getSelection();if(sel.rangeCount){sel.modify('move','backward','character');updateStatus();}
+      }else if(e.key==='ArrowRight'||e.key==='l'){
+        const sel=window.getSelection();if(sel.rangeCount){sel.modify('move','forward','character');updateStatus();}
+      }else if(e.key==='0'){
+        const sel=window.getSelection();if(sel.rangeCount){sel.modify('move','backward','lineboundary');updateStatus();}
+      }else if(e.key==='$'){
+        const sel=window.getSelection();if(sel.rangeCount){sel.modify('move','forward','lineboundary');updateStatus();}
+      }else if(e.key==='w'){
+        const sel=window.getSelection();if(sel.rangeCount){sel.modify('move','forward','word');updateStatus();}
+      }else if(e.key==='b'){
+        const sel=window.getSelection();if(sel.rangeCount){sel.modify('move','backward','word');updateStatus();}
+      }
+    }else if(mode==='insert'){
+      if(e.key==='Escape'){e.preventDefault();enterNormalMode();}
+      else if(e.key==='Tab'){e.preventDefault();document.execCommand('insertText',false,'  ');}
+      setTimeout(updateStatus,0);
+    }
+  });
+  viContent.addEventListener('mouseup',()=>updateStatus());
+  viContent.addEventListener('keyup',()=>{if(mode==='insert')updateStatus();});
+  viCmdInput.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter'){
+      const cmd=viCmdInput.value.slice(1).trim();
+      viCmd.style.display='none';
+      if(cmd==='w'){saveFile();mode='normal';viContent.focus();}
+      else if(cmd==='q'){exitVi();return;}
+      else if(cmd==='wq'||cmd==='x'){saveFile();exitVi();return;}
+      else if(cmd==='q!'){exitVi();return;}
+      else if(cmd.startsWith('w ')){
+        const newName=cmd.slice(2).trim();
+        filePath=resolvePath(newName);
+        displayName=filePath.split('/').pop()||newName;
+        if(win)win.querySelector('.window-title').textContent='vi - '+displayName;
+        saveFile();mode='normal';viContent.focus();
+      }else{
+        viStatusLeft.textContent='E492: Not an editor command: '+cmd;
+        mode='normal';viContent.focus();
+      }
+      viCmdInput.value='';
+      updateStatus();
+    }else if(e.key==='Escape'){
+      viCmd.style.display='none';mode='normal';viCmdInput.value='';viContent.focus();updateStatus();
+    }
+  });
+  updateStatus();
+  setTimeout(()=>viContent.focus(),50);
+}
+function openApp(appId){closeAllMenus();document.getElementById('context-menu').classList.remove('visible');switch(appId){case'terminal':return openTerminal();case'fm':return openFileManager();case'browser':return openBrowser();case'osview':return openOsview();case'about':return openAbout();}}
+let fmCurrentPath='/home/guest';
+function openFileManager(){const existing=windows['fm'];if(existing){if(existing.classList.contains('minimized'))existing.classList.remove('minimized');bringToFront(existing);return;}const fmHTML=`<div style="display:flex;flex-direction:column;height:100%;"><div class="fm-toolbar"><div class="browser-btn" onclick="fmNavigate('..')" style="font-size:11px;padding:0 6px;">Parent</div><div class="browser-btn" onclick="fmNavigate('/home/guest')" style="font-size:11px;padding:0 6px;">Home</div><div class="fm-path" id="fm-path">/home/guest</div></div><div class="fm-content" id="fm-content"></div><div class="fm-statusbar" id="fm-status">Ready</div></div>`;const dw=window.innerWidth,dh=window.innerHeight;const w=Math.min(520,dw-40),h=Math.min(400,dh-40);const win=createWindow('fm','File Manager - /home/guest',Math.max(160,(dw-w)/2+60),Math.max(80,(dh-h)/2-20),w,h,fmHTML,{menubar:'<span class="menubar-item">File</span><span class="menubar-item">Selected</span><span class="menubar-item">View</span><span class="menubar-item disabled">Help</span>'});fmRender(fmCurrentPath);}
+function fmRender(path){fmCurrentPath=path;const contentEl=document.getElementById('fm-content');const pathEl=document.getElementById('fm-path');const statusEl=document.getElementById('fm-status');if(!contentEl)return;pathEl.textContent=path;const node=filesystem[path];if(!node||node.type!=='dir'){contentEl.innerHTML='<div style="padding:20px;color:#888;">Cannot open directory.</div>';return;}const win=windows['fm'];if(win){win.querySelector('.window-title').textContent='File Manager - '+path;win.dataset.title='File Manager - '+path;}contentEl.innerHTML='';const items=node.children;items.forEach(name=>{const fullPath=path==='/'?'/'+name:path+'/'+name;const child=filesystem[fullPath];const isDir=child?child.type==='dir':false;const item=document.createElement('div');item.className='fm-item';item.ondblclick=()=>{if(isDir)fmNavigate(fullPath);else{openViEditor(fullPath);}};const iconSvg=isDir?`<svg viewBox="0 0 36 36" width="36" height="36"><rect x="1" y="8" width="34" height="24" rx="2" fill="#d4a843" stroke="#8a6d2b" stroke-width="1"/><rect x="1" y="5" width="16" height="6" rx="2" fill="#d4a843" stroke="#8a6d2b" stroke-width="1"/><rect x="4" y="12" width="28" height="17" fill="#e8c95a" rx="1"/></svg>`:`<svg viewBox="0 0 36 36" width="36" height="36"><rect x="4" y="1" width="24" height="34" rx="1" fill="#f0f0f0" stroke="#888" stroke-width="1"/><path d="M22 1L28 7V1Z" fill="#ccc" stroke="#888" stroke-width="0.5"/><line x1="8" y1="10" x2="24" y2="10" stroke="#aaa" stroke-width="0.5"/><line x1="8" y1="14" x2="24" y2="14" stroke="#aaa" stroke-width="0.5"/><line x1="8" y1="18" x2="20" y2="18" stroke="#aaa" stroke-width="0.5"/><line x1="8" y1="22" x2="22" y2="22" stroke="#aaa" stroke-width="0.5"/></svg>`;item.innerHTML=`<div class="fm-item-icon">${iconSvg}</div><div class="fm-item-label">${name}</div>`;contentEl.appendChild(item);});statusEl.textContent=`${items.length} item${items.length!==1?'s':''}`;}
+function fmNavigate(path){if(path==='..'){const parts=fmCurrentPath.split('/').filter(Boolean);parts.pop();path='/'+parts.join('/')||'/';}if(!path.startsWith('/'))path=fmCurrentPath+'/'+path;path=resolvePath(path);const node=filesystem[path];if(node&&node.type==='dir')fmRender(path);}
+let osviewInterval=null;
+function openOsview(){const existing=windows['osview'];if(existing){if(existing.classList.contains('minimized'))existing.classList.remove('minimized');bringToFront(existing);return;}const osHTML=`<div class="osview-content" id="osview-body"><div class="osview-title">gr_osview</div><div class="osview-section"><div class="osview-label"><span class="osview-label-key">CPU Usage:</span><div class="osview-legend"><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#2255cc"></span>user</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cc2222"></span>sys</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cc22cc"></span>intr</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#22cc22"></span>idle</span></div></div><div class="osview-bar-container"><div class="osview-bar-segment" id="os-cpu-user" style="background:#2255cc;width:30%"></div><div class="osview-bar-segment" id="os-cpu-sys" style="background:#cc2222;width:10%"></div><div class="osview-bar-segment" id="os-cpu-intr" style="background:#cc22cc;width:2%"></div><div class="osview-bar-segment" id="os-cpu-idle" style="background:#22cc22;width:58%"></div></div></div><div class="osview-section"><div class="osview-label"><span class="osview-label-key">Memory:</span><div class="osview-legend"><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#000088"></span>kernel</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cc2222"></span>fs cache</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cc22cc"></span>dirty</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#2255cc"></span>user</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#22cc22"></span>free</span></div></div><div class="osview-bar-container"><div class="osview-bar-segment" id="os-mem-kernel" style="background:#000088;width:8%"></div><div class="osview-bar-segment" id="os-mem-cache" style="background:#cc2222;width:12%"></div><div class="osview-bar-segment" id="os-mem-dirty" style="background:#cc22cc;width:3%"></div><div class="osview-bar-segment" id="os-mem-user" style="background:#2255cc;width:45%"></div><div class="osview-bar-segment" id="os-mem-free" style="background:#22cc22;width:32%"></div><div class="osview-bar-value" id="os-mem-total">49152</div></div></div><div class="osview-section"><div class="osview-label"><span class="osview-label-key">CPU Wait:</span><div class="osview-legend"><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#2255cc"></span>io</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cccc22"></span>swap</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cc22cc"></span>pio</span></div></div><div class="osview-bar-container"><div class="osview-bar-segment" id="os-wait-io" style="background:#2255cc;width:3%"></div><div class="osview-bar-segment" id="os-wait-swap" style="background:#cccc22;width:0%"></div><div class="osview-bar-segment" id="os-wait-pio" style="background:#cc22cc;width:0%"></div></div></div><div class="osview-section"><div class="osview-label"><span class="osview-label-key">Sys.Act 0.2sec:</span><div class="osview-legend"><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#2255cc"></span>syscall</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cc22cc"></span>switch</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#22cc22"></span>fork</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cccc22"></span>exec</span></div></div><div class="osview-bar-container"><div class="osview-bar-segment" id="os-sys-syscall" style="background:#2255cc;width:15%"></div><div class="osview-bar-segment" id="os-sys-switch" style="background:#cc22cc;width:5%"></div><div class="osview-bar-segment" id="os-sys-fork" style="background:#22cc22;width:1%"></div><div class="osview-bar-segment" id="os-sys-exec" style="background:#cccc22;width:1%"></div><div class="osview-bar-value" id="os-sys-total">20000</div></div></div><div class="osview-section"><div class="osview-label"><span class="osview-label-key">Gfx 0.2sec:</span><div class="osview-legend"><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#2255cc"></span>intr</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#cc2222"></span>swch</span><span class="osview-legend-item"><span class="osview-legend-swatch" style="background:#22cc22"></span>fwrt</span></div></div><div class="osview-bar-container"><div class="osview-bar-segment" id="os-gfx-intr" style="background:#2255cc;width:8%"></div><div class="osview-bar-segment" id="os-gfx-swch" style="background:#cc2222;width:3%"></div><div class="osview-bar-segment" id="os-gfx-fwrt" style="background:#22cc22;width:2%"></div><div class="osview-bar-value">5000</div></div></div></div>`;const dw=window.innerWidth,dh=window.innerHeight;const win=createWindow('osview','gr_osview',20,dh-340,Math.min(400,dw-40),300,osHTML);updateOsview();osviewInterval=setInterval(updateOsview,1500);}
+function updateOsview(){let memUsedPct=45;if(performance&&performance.memory){const mem=performance.memory;memUsedPct=Math.round((mem.usedJSHeapSize/mem.jsHeapSizeLimit)*60);}else{memUsedPct=40+Math.random()*20;}const memFreePct=Math.max(5,77-memUsedPct-20);const cpuUser=10+Math.random()*40;const cpuSys=3+Math.random()*12;const cpuIntr=Math.random()*5;const cpuIdle=Math.max(0,100-cpuUser-cpuSys-cpuIntr);setBar('os-cpu-user',cpuUser);setBar('os-cpu-sys',cpuSys);setBar('os-cpu-intr',cpuIntr);setBar('os-cpu-idle',cpuIdle);setBar('os-mem-kernel',6+Math.random()*4);setBar('os-mem-cache',8+Math.random()*8);setBar('os-mem-dirty',1+Math.random()*4);setBar('os-mem-user',memUsedPct);setBar('os-mem-free',memFreePct);setBar('os-wait-io',Math.random()*8);setBar('os-wait-swap',Math.random()*2);setBar('os-sys-syscall',10+Math.random()*20);setBar('os-sys-switch',3+Math.random()*8);setBar('os-sys-fork',Math.random()*3);setBar('os-sys-exec',Math.random()*3);setBar('os-gfx-intr',4+Math.random()*12);setBar('os-gfx-swch',Math.random()*6);setBar('os-gfx-fwrt',Math.random()*5);}
+function setBar(id,pct){const el=document.getElementById(id);if(el)el.style.width=Math.max(0,pct)+'%';}
+function openBrowser(){const existing=windows['browser'];if(existing){if(existing.classList.contains('minimized'))existing.classList.remove('minimized');bringToFront(existing);return;}const brHTML=`<div style="display:flex;flex-direction:column;height:100%;"><div class="browser-toolbar"><div class="browser-nav"><div class="browser-btn" onclick="browserBack()">Back</div><div class="browser-btn" onclick="browserForward()">Forward</div><div class="browser-btn" onclick="browserReload()">Reload</div><div class="browser-btn" onclick="browserHome()">Home</div><div class="browser-btn" onclick="browserStop()">Stop</div></div><div class="browser-url-row"><span class="browser-url-label">Location:</span><input class="browser-url-input" id="browser-url" type="text" value="about:blank" spellcheck="false" onkeydown="if(event.key==='Enter')browserGo(this.value)"></div></div><div class="browser-viewport" id="browser-viewport"><div class="browser-loading-bar" id="browser-loading" style="width:0%"></div><div id="browser-home-page" style="background:#c4c4c4;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px;"><svg width="60" height="60" viewBox="0 0 120 120"><g transform="translate(20,15)"><polygon points="40,0 80,20 40,40 0,20" fill="#e44"/><polygon points="0,20 40,40 40,80 0,60" fill="#4a4"/><polygon points="40,40 80,20 80,60 40,80" fill="#44e"/></g></svg><div style="font-size:18px;font-weight:bold;color:#333;">Netscape Navigator</div><div style="font-size:12px;color:#666;">SGI Enhanced Edition for IRIX 6.5</div><div style="margin-top:10px;font-size:11px;color:#888;max-width:350px;text-align:center;line-height:1.5;">Type a URL in the Location bar above and press Enter.<br>Note: Some sites may not load due to iframe restrictions.</div><div style="margin-top:15px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;"><div class="browser-btn" onclick="browserGo('https://en.wikipedia.org')" style="cursor:pointer">Wikipedia</div><div class="browser-btn" onclick="browserGo(getBlogUrl())" style="cursor:pointer">Blog</div><div class="browser-btn" onclick="browserGo('https://lite.duckduckgo.com')" style="cursor:pointer">DuckDuckGo</div></div></div><iframe id="browser-iframe" style="display:none;width:100%;height:100%;border:none;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe></div><div class="browser-statusbar" id="browser-status">Document: Done</div></div>`;const dw=window.innerWidth,dh=window.innerHeight;const w=Math.min(1200,dw-20),h=Math.min(840,dh-60);const win=createWindow('browser','Netscape Navigator',Math.max(0,dw-w-10),Math.max(30,(dh-h)/2-40),w,h,brHTML,{menubar:'<span class="menubar-item">File</span><span class="menubar-item">Edit</span><span class="menubar-item">View</span><span class="menubar-item">Go</span><span class="menubar-item">Bookmarks</span><span class="menubar-item disabled">Help</span>'});}
+const browserHistory=[];
+let browserHistoryIndex=-1;
+function browserGo(url){if(!url)return;if(url.startsWith('http://')||url.startsWith('https://')||url.startsWith('about:')||url.startsWith('file://')){/* use as-is */}else if(url.startsWith('../')||url.startsWith('./')||url.startsWith('/')){let path=url.replace(/\/+$/,'');if(!/\.[a-zA-Z0-9]+$/.test(path))path+='/index.html';url=new URL(path,window.location.href).href;}else{const hostPart=url.split('/')[0].split('?')[0].split('#')[0];const hasTLD=/^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$/.test(hostPart);if(hasTLD){url='https://'+url;}else{url='https://en.wikipedia.org/wiki/'+url.trim().replace(/\s+/g,'_');}}const urlInput=document.getElementById('browser-url');const iframe=document.getElementById('browser-iframe');const homePage=document.getElementById('browser-home-page');const loading=document.getElementById('browser-loading');const status=document.getElementById('browser-status');if(!urlInput||!iframe)return;urlInput.value=url;if(url==='about:blank'){iframe.style.display='none';homePage.style.display='flex';status.textContent='Document: Done';return;}homePage.style.display='none';iframe.style.display='block';loading.style.width='20%';try{status.textContent='Contacting host: '+new URL(url).hostname+'...';}catch(e){}setTimeout(()=>{loading.style.width='50%';try{status.textContent='Transferring data from '+new URL(url).hostname+'...';}catch(e){}},300);setTimeout(()=>{loading.style.width='80%';},600);iframe.onload=()=>{loading.style.width='100%';status.textContent='Document: Done';setTimeout(()=>{loading.style.width='0%';},500);};iframe.onerror=()=>{status.textContent='Error loading document.';loading.style.width='0%';};try{iframe.src=url;}catch(e){status.textContent='Error: Unable to load '+url;}const win=windows['browser'];if(win)win.querySelector('.window-title').textContent='Netscape: '+url;browserHistory.push(url);browserHistoryIndex=browserHistory.length-1;}
+function browserBack(){if(browserHistoryIndex>0){browserHistoryIndex--;browserGo(browserHistory[browserHistoryIndex]);}}
+function browserForward(){if(browserHistoryIndex<browserHistory.length-1){browserHistoryIndex++;browserGo(browserHistory[browserHistoryIndex]);}}
+function browserReload(){const iframe=document.getElementById('browser-iframe');if(iframe&&iframe.src)iframe.src=iframe.src;}
+function browserHome(){browserGo('about:blank');}
+function browserStop(){const iframe=document.getElementById('browser-iframe');if(iframe)iframe.src='about:blank';const loading=document.getElementById('browser-loading');if(loading)loading.style.width='0%';const status=document.getElementById('browser-status');if(status)status.textContent='Stopped.';}
+function openAbout(){const existing=windows['about'];if(existing){if(existing.classList.contains('minimized'))existing.classList.remove('minimized');bringToFront(existing);return;}const aboutHTML=`<div class="welcome-content"><svg class="welcome-logo" viewBox="0 0 120 120"><g transform="translate(20,10)"><polygon points="40,0 80,20 80,60 40,80 0,60 0,20" fill="none" stroke="#555" stroke-width="1"/><polygon points="40,0 80,20 40,40 0,20" fill="#e44" opacity="0.95"/><polygon points="0,20 40,40 40,80 0,60" fill="#4a4" opacity="0.95"/><polygon points="40,40 80,20 80,60 40,80" fill="#44e" opacity="0.95"/><line x1="40" y1="0" x2="40" y2="40" stroke="#fff" stroke-width="0.5" opacity="0.3"/><line x1="0" y1="20" x2="40" y2="40" stroke="#fff" stroke-width="0.5" opacity="0.3"/><line x1="80" y1="20" x2="40" y2="40" stroke="#fff" stroke-width="0.5" opacity="0.3"/></g></svg><div class="welcome-title">Welcome to Silicon Graphics</div><div class="welcome-subtitle">IRIX™ 6.5 — Indigo Magic™ Desktop</div><div class="welcome-sgi-colors"><span style="background:#cc2222"></span><span style="background:#cc8822"></span><span style="background:#cccc22"></span><span style="background:#22aa22"></span><span style="background:#2255cc"></span><span style="background:#8822cc"></span></div><div class="welcome-info"><strong>System:</strong> SGI O2 Workstation (IP32)<br><strong>Processor:</strong> MIPS R5000 @ 180 MHz<br><strong>Memory:</strong> 192 MB<br><strong>Graphics:</strong> CRM<br><strong>OS:</strong> IRIX 6.5 (01090133)<br><br><span style="color:#666;">© 1987-1999 Silicon Graphics, Inc. All Rights Reserved.</span></div></div>`;const dw=window.innerWidth,dh=window.innerHeight;const w=Math.min(420,dw-40),h=Math.min(440,dh-40);createWindow('about','Welcome to SGI',Math.max(50,(dw-w)*0.25),Math.max(30,(dh-h)/2-30),w,h,aboutHTML);}
+function drawDesktopBackground(){const canvas=document.getElementById('desktop-bg');canvas.width=window.innerWidth;canvas.height=window.innerHeight;const ctx=canvas.getContext('2d');const grad=ctx.createRadialGradient(canvas.width*0.5,canvas.height*0.45,0,canvas.width*0.5,canvas.height*0.45,canvas.width*0.7);grad.addColorStop(0,'#6aadaa');grad.addColorStop(0.5,'#5a9e9a');grad.addColorStop(1,'#4a8a86');ctx.fillStyle=grad;ctx.fillRect(0,0,canvas.width,canvas.height);const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);const data=imageData.data;for(let i=0;i<data.length;i+=4){const noise=(Math.random()-0.5)*18;data[i]+=noise;data[i+1]+=noise;data[i+2]+=noise;}ctx.putImageData(imageData,0,0);ctx.globalAlpha=0.03;ctx.strokeStyle='#000';ctx.lineWidth=1;for(let x=0;x<canvas.width;x+=4){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();}for(let y=0;y<canvas.height;y+=4){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();}ctx.globalAlpha=1;}
+window.addEventListener('resize',drawDesktopBackground);
+function getBlogUrl(){return'../index.html';}
+(function(){
+  var isMobile=/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if(!isMobile&&window.innerWidth<800)isMobile=true;
+  if(!isMobile&&('ontouchstart' in window)&&window.innerWidth<1024)isMobile=true;
+  if(isMobile){document.getElementById('mobile-warning').classList.remove('hidden');}
+})();
+(function(){
+  try{
+    var c=document.createElement('canvas');c.width=2;c.height=2;
+    var ctx=c.getContext('2d');
+    ctx.fillStyle='#a0c';ctx.fillRect(0,0,2,2);
+    var d1=ctx.getImageData(0,0,2,2);
+    var pixels=d1.data;
+    var allZero=true;
+    for(var i=0;i<pixels.length;i++){if(pixels[i]!==0){allZero=false;break;}}
+    if(allZero){document.getElementById('canvas-warning').classList.remove('hidden');return;}
+    c.toDataURL();
+    var d2=ctx.getImageData(0,0,2,2);
+    var mismatch=false;
+    for(var i=0;i<d1.data.length;i++){if(d1.data[i]!==d2.data[i]){mismatch=true;break;}}
+    if(mismatch){document.getElementById('canvas-warning').classList.remove('hidden');}
+  }catch(e){
+    document.getElementById('canvas-warning').classList.remove('hidden');
+  }
+})();
+function typeBoot(){if(bootIndex<bootMessages.length){const line=bootMessages[bootIndex];const span=document.createElement('div');span.textContent=line;if(line.startsWith('IRIX')||line.startsWith('Welcome')||line.startsWith('CPU:'))span.classList.add('highlight');bootTextEl.appendChild(span);bootTextEl.scrollTop=bootTextEl.scrollHeight;bootIndex++;const delay=line===''?80:(line.startsWith('Starting')?120:40);setTimeout(typeBoot,delay);}else{markBootShown();setTimeout(()=>{bootSplash.classList.add('hidden');showDesktop(false);},600);}}
+if(shouldShowBoot()){setTimeout(typeBoot,500);}else{bootSplash.style.display='none';showDesktop(true);}
+</script>
+</body>
+</html>
