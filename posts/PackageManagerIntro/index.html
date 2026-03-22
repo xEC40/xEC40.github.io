@@ -11,7 +11,7 @@
 
 <body>
     <header>
-        <nav><a href="/blog.html"> <canvas id="logoCanvas" width="70" height="70"></canvas></a>
+        <nav><a href="/"> <canvas id="logoCanvas" width="70" height="70"></canvas></a>
             <ul>
                 <li><a href=../../about/>about</a></li>
                 <li><a href=../>posts</a></li>
@@ -33,7 +33,7 @@
         <p>this tutorial assumes you're on a debian-like <a href="https://distrowatch.com/dwres.php?resource=popularity">distribution</a> (meaning you're using the  <a href="https://www.cyberciti.biz/faq/ubuntu-lts-debian-linux-apt-command-examples/">apt package manager</a>)</p>
         <img src="../../assets/apt1.png">
         <p>if you open a terminal, you'll be greeted with something like this.<br>the format is&nbsp; <span style="color: red">User@NameOfComputer</span>. the name of my User is <span style="color: red">user</span> and the Name Of the Computer i'm using is <span style="color: red">debian</span>.  <br>this is the Command Line, where you'll type commands if you want to communicate with your computer.</p>
-        <p style="font-size: 35px; font-family: Lucida Console, monospace;">apt -h</p>
+        <p style="font-size: 35px; font-family: Lucida Console, monospace;">$ apt -h</p>
         <p>"apt" is your package manager, "-h" is a paramater to the command called that passes the "h" flag (which is standard for bringing up a help menu). all of this jargon means typing any command and "-h" after will usually bring up some help.</p>
         <p>Alright, that's 60% of using Linux right there. Figuring out how to get help, then reading through what's documented to help yourself. If this doesn't sound interesting, this may not be for you, and that's ok!</p>
         <p>moving on..</p>
@@ -44,7 +44,7 @@
         <p>once you prepend <span style="color: red">sudo</span> to your command, you'll get an output like this. this means it searched for updates to programs you have installed on your system, 165 programs on mine can be updated right now.</p>
         <p><br>usually i don't care how many have to be installed and just do the download + install in one command. this makes it very simple to update my entire computer, just by entering one command.</p>
         <img src="../../assets/apt4.png">
-        <p style="font-size: 35px; font-family: Lucida Console, monospace;">sudo apt update -y && sudo apt upgrade -y</p>
+        <p style="font-size: 35px; font-family: Lucida Console, monospace;">$ sudo apt update -y && sudo apt upgrade -y</p>
         <p>the "<span style="color: red">&&</span>" allows you to chain multiple commands together. in that one line, i ran <span style="color: red">apt update</span> followed by <span style="color: red">apt upgrade</span> as super user, using "<span style="color: red">-y</span>" to skip the need for me to confirm i want the changes.</p>
         <p><br>the first thing i usually install is a web browser, so i'll show you how to install <a href="https://brave.com/linux/#release-channel-installation">brave</a>.</p>
         <p>when trying to install something, i usually search for the software followed by "install"</p>
@@ -64,7 +64,7 @@
         <p>your new software should now be in your shell <a href="https://askubuntu.com/a/551993">$PATH</a>. what i usually do now, is start typing out how the software is spelled, and letting [TAB] autocomplete finish the command for me.</p>
         <img src="../../assets/apt10.png">
 
-        <p><br><br>i am not <em>smart</em> or <em>cool</em> for knowing this stuff, i'm just a Real Nerd. i've spend thousands of hours behind a computer. we (humanity) have a problem where we don't want to share information, because we think it'll encroach on our Coolness or Opportunity of some sort.</p>
+        <p><br><br>I'm a Real Nerd. i've spend thousands of hours behind a computer. we (humanity) have a problem where we don't want to share information, because we think it'll encroach on our Coolness or Opportunity of some sort.</p>
         <p>i think this is ridiculous.</p>
 
 
@@ -75,7 +75,7 @@
 
     </div>
     <footer>
-        <p>&copy;2023&ndash;2025&nbsp; &#183;&nbsp;
+        <p>&copy;2023&ndash;2026&nbsp; &#183;&nbsp;
             <a class=h-card rel=me href=/blog.html>home</a> &#183;&nbsp;
             <a href=https://twitter.com/x3c49 rel=me>twitter</a> &#183;&nbsp;
             <a href=/projects rel=me>Projects!</a> &#183;&nbsp;
