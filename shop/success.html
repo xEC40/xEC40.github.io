@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>You're All Set — Full Plan Activated</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #4CAF50;
+      --green-dim: #45a049;
+      --green-soft: #66bb6a;
+      --green-glow: rgba(76, 175, 80, 0.15);
+      --bg: #000;
+      --surface: #111;
+      --surface2: #1a1a1a;
+      --border: #2a2a2a;
+      --border-bright: #3a3a3a;
+      --text: #f0f0f0;
+      --text-muted: #888;
+      --text-dim: #444;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      font-family: 'Space Grotesk', sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Grid overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(76,175,80,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(76,175,80,0.025) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Radial burst behind checkmark ── */
+    .glow-ring {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(76,175,80,0.14) 0%, transparent 65%);
+      pointer-events: none;
+      animation: glowPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes glowPulse {
+      0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+      50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+    }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 24px 60px;
+      min-height: 100vh;
+    }
+
+    /* Animated checkmark */
+    .check-wrap {
+      position: relative;
+      margin-bottom: 40px;
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    }
+
+    .check-circle {
+      width: 88px; height: 88px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(76,175,80,0.18), rgba(76,175,80,0.06));
+      border: 2px solid rgba(76,175,80,0.5);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.4rem;
+      box-shadow: 0 0 40px rgba(76,175,80,0.25), 0 0 80px rgba(76,175,80,0.1);
+    }
+
+    .check-ring {
+      position: absolute;
+      inset: -10px;
+      border-radius: 50%;
+      border: 1px solid rgba(76,175,80,0.2);
+      animation: ringExpand 2s ease-out infinite;
+    }
+
+    .check-ring-2 {
+      position: absolute;
+      inset: -20px;
+      border-radius: 50%;
+      border: 1px solid rgba(76,175,80,0.1);
+      animation: ringExpand 2s 0.6s ease-out infinite;
+    }
+
+    @keyframes ringExpand {
+      0% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1.5); }
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.5); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(76,175,80,0.1);
+      border: 1px solid rgba(76,175,80,0.3);
+      color: var(--green-soft);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      padding: 6px 16px;
+      border-radius: 100px;
+      margin-bottom: 28px;
+      animation: fadeUp 0.5s 0.2s ease both;
+    }
+
+    .badge-dot {
+      width: 7px; height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.65); }
+    }
+
+    h1 {
+      font-size: clamp(2.8rem, 6vw, 5.2rem);
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      line-height: 1.04;
+      margin-bottom: 22px;
+      animation: fadeUp 0.5s 0.3s ease both;
+    }
+
+    h1 span {
+      background: linear-gradient(135deg, var(--green), var(--green-soft), #a5d6a7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: clamp(1rem, 2vw, 1.18rem);
+      color: var(--text-muted);
+      max-width: 500px;
+      line-height: 1.65;
+      margin-bottom: 60px;
+      animation: fadeUp 0.5s 0.4s ease both;
+    }
+
+    /* ── What You Got ── */
+    .plan-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 16px;
+      max-width: 900px;
+      width: 100%;
+      margin-bottom: 60px;
+      animation: fadeUp 0.5s 0.5s ease both;
+    }
+
+    .plan-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 22px;
+      text-align: left;
+      transition: border-color 0.3s;
+    }
+
+    .plan-card:hover {
+      border-color: rgba(76,175,80,0.3);
+    }
+
+    .plan-card-icon {
+      font-size: 1.6rem;
+      margin-bottom: 12px;
+    }
+
+    .plan-card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .plan-card-detail {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--green-soft);
+      margin-bottom: 10px;
+    }
+
+    .plan-card p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    /* ── What Happens Next ── */
+    .next-section {
+      max-width: 680px;
+      width: 100%;
+      animation: fadeUp 0.5s 0.6s ease both;
+    }
+
+    .next-section h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      font-family: 'DM Mono', monospace;
+      margin-bottom: 24px;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+    }
+
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .timeline-item {
+      display: flex;
+      gap: 20px;
+      position: relative;
+    }
+
+    .timeline-item:not(:last-child) .timeline-line {
+      position: absolute;
+      left: 15px;
+      top: 34px;
+      bottom: -8px;
+      width: 1px;
+      background: linear-gradient(to bottom, rgba(76,175,80,0.4), transparent);
+    }
+
+    .timeline-dot {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--green-glow);
+      border: 1px solid rgba(76,175,80,0.4);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--green-soft);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .timeline-body {
+      padding-bottom: 28px;
+    }
+
+    .timeline-body strong {
+      display: block;
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .timeline-body p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 28px 24px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.78rem;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.06em;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 600px) {
+      .plan-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <section class="hero">
+    <div class="glow-ring"></div>
+
+    <div class="check-wrap">
+      <div class="check-ring"></div>
+      <div class="check-ring-2"></div>
+      <div class="check-circle">✓</div>
+    </div>
+
+    <div class="badge">
+      <span class="badge-dot"></span>
+      FULL PLAN ACTIVATED
+    </div>
+
+    <h1>You're <span>fully set.</span></h1>
+
+    <p class="subtitle">
+      Your landing page is being built, your support plan is active, and your domain is being configured. Everything is in motion.
+    </p>
+
+    <!-- What's included -->
+    <div class="plan-grid">
+      <div class="plan-card">
+        <div class="plan-card-icon">🏗️</div>
+        <div class="plan-card-title">Landing Page Build</div>
+        <div class="plan-card-detail">One-time — $200</div>
+        <p>Custom landing page on GitHub Pages. Includes 4 revisions and 1 complimentary redesign.</p>
+      </div>
+      <div class="plan-card">
+        <div class="plan-card-icon">🛠️</div>
+        <div class="plan-card-title">Annual Support Plan</div>
+        <div class="plan-card-detail">$60 / yr — active now</div>
+        <p>7 revisions, 4 redesigns/month, dynamic site support, and BYO domain integration.</p>
+      </div>
+      <div class="plan-card">
+        <div class="plan-card-icon">🌐</div>
+        <div class="plan-card-title">Domain & SSL Setup</div>
+        <div class="plan-card-detail">$30 / yr — auto-renews</div>
+        <p>Domain registration, DNS config, GitHub Pages connection, and SSL certification.</p>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="next-section">
+      <h2>What happens next</h2>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-line"></div>
+          <div class="timeline-dot">01</div>
+          <div class="timeline-body">
+            <strong>We reach out to confirm details</strong>
+            <p>Expect contact via email within 1 business day to go over any preferences before we start building.</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-line"></div>
+          <div class="timeline-dot">02</div>
+          <div class="timeline-body">
+            <strong>You pick or confirm your domain</strong>
+            <p>If you're using our domain registration, we'll send a shortlist. If you're bringing your own, we'll talk in email about how to implement it.</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-line"></div>
+          <div class="timeline-dot">03</div>
+          <div class="timeline-body">
+            <strong>Build, deploy & configure</strong>
+            <p>We build your landing page, connect your domain, and configure SSL — then send you a live preview link.</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot">04</div>
+          <div class="timeline-body">
+            <strong>You receive your credentials</strong>
+            <p>Your site login, GitHub repo access, and domain details are delivered. Your support plan is ready to use from day one.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <footer>
+    Questions? Reply to your confirmation email — we'll get back to you promptly.
+  </footer>
+
+</body>
+</html>
