@@ -11,7 +11,7 @@ nbInit(theme = revealTheme)
 setSlidesTheme(Blood)
 showSlideNumber()
 useScrollWheel()
-footer(&("[home](https://ec4y.dev) - [jobs@ec4y.dev (work)](mailto:jobs@ec4y.dev) - [mail@ec4y.dev (personal/all)](mailto:mail@ec4y.dev) - [twitter](https://twitter.com/0xec4y)"))
+footer(&("[home](https://x3c4.club) - [mail @ x3c4.club (work)](mailto:mail@x3c4.club) - [mail@x3c4.club (personal/all)](mailto:mail@x3c4.club) - [twitter](https://twitter.com/x3c49)"))
 
 ## WHAT IS A VIRUS? HOW DO I GET ONE? HOW CAN I AVOID IT? THANKS.
 

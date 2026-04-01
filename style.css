@@ -41,7 +41,7 @@ nav ul.fade-transition-medium {
 
 body{
 
-    background-color: #000000;
+    background-color: black;
 
     padding:1rem;
 
@@ -55,11 +55,27 @@ body{
 
     font-size:20px;
 
-    color:rgba(0,0,0,.87); /* Note: This is likely overridden elsewhere */
+    color:rgba(0,0,0,.87);
 
     -webkit-font-smoothing:antialiased;
 
     font-weight:300
+
+}
+
+#content {
+
+    position: relative;
+
+    z-index: 1;
+
+    pointer-events: none;
+
+}
+
+#content a, #content footer {
+
+    pointer-events: auto;
 
 }
 

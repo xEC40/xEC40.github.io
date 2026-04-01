@@ -4,40 +4,41 @@
 <head>
     <meta charset="utf-8">
     <meta name="color-scheme" content="light only">
-    <title>home page</title>
-    <link rel="stylesheet" href="style.css">
+    <title>blog home</title>
+    <link rel="stylesheet" href="../style.css">
     <link rel="shortcut icon" href=favicon.ico>
-    <script type="importmap">
-    {
-        "imports": {
-            "@chenglou/pretext": "https://esm.sh/@chenglou/pretext@0.0.3"
-        }
-    }
-    </script>
+
+
 </head>
 <body>
   <canvas id="canvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.7; pointer-events: none;"></canvas>
   <nav><a href="/"> <canvas id="logoCanvas" width="70" height="70"></canvas></a>
     <header>
       <ul>
-          <li><a href=about/>about</a></li>
-          <li><a href=blog/posts/>posts</a></li>
-          <li><a href=projects/>projects</li>
+          <li><a href=../about/>about</a></li>
+          <li><a href=posts/>posts</a></li>
+          <li><a href=../projects/>projects</li>
           <li><a href=https://twitter.com/x3c49 rel=me>@me</a></li>
-          <li><a href=https://github.com/x3c49 rel=me><img src="assets/gh.png" width="20px" height="20px"></a></li>
+          <li><a href=https://github.com/x3c49 rel=me><img src="../assets/gh.png" width="20px" height="20px"></a></li>
       </ul>
     </nav>
     </header>
 
     <div id=content>
 
-        <p id="greeting">&nbsp;&nbsp;&nbsp;Hello, I&rsquo;m <a href="about/">x3c49</a>. I think computer is cool.</p>
-        <canvas id="textCanvas" style="display:block; pointer-events:none;"></canvas>
-        <a href=blog/>blog</a>
+        <p>&nbsp;&nbsp;&nbsp;Hello, I&rsquo;m <a href="about/">x3c49</a>. I think computer is cool.
+        <br><br><br><br><br><br><br>
+        <h1><a href="posts/PackageManagerIntro/">you need a degree in Computer-Science to install apps on Linux</a></h1>
+        <p>and more sh#t they tell you to keep you <em>afraid</em> of learning about computers. (<a href="posts/PackageManagerIntro/">10 min read</a>)</p>
+        <h1><a href=posts/Virus/>A Virus? Those Still Exist??</a></h1>
+        <p>Demystifying what a "Virus" is. (Hint: It's <b>not magic</b>) (<a href=posts/Virus/>7 min slideshow</a>) </p>
+        <h1><a href=posts/Mediocrity/>Mediocrity</a></h1>
+        <p>Welcome to my personal site, this is my first post. These will improve in quality as time goes on. (<a href=posts/Mediocrity/>2 min read</a>)</p>
+        <a href=posts/>All posts</a>
         
         <footer>
           <p>&copy;2023&ndash;2026&nbsp; &#183;&nbsp;
-              <a class=h-card rel=me href=/>home</a> &#183;&nbsp;
+              <a class=h-card rel=me href=/blog.html>home</a> &#183;&nbsp;
               <a href=https://twitter.com/x3c49 rel=me>twitter</a> &#183;&nbsp;
               <a href=/projects rel=me>Projects!</a> &#183;&nbsp;
               <a href=mailto:mail@x3c4.club rel=me>mail@x3c4.club [EMail Inbox]&nbsp;</a>;&nbsp;
@@ -51,8 +52,6 @@ const _sin=Math.sin,_cos=Math.cos,_floor=Math.floor,_round=Math.round,
  
 let a=document.getElementById('canvas'),b=a.getContext('2d');
 let _aw=0,_ah=0;
-// Expose animation center for text rendering
-window.__animCenter = { ox: 0, oy: 0 };
  
 function A(){C();window.addEventListener('resize',C);requestAnimationFrame(D);}
 function C(){_aw=a.width=window.innerWidth;_ah=a.height=window.innerHeight;}
@@ -163,9 +162,6 @@ function D(){
     const t=f*0.065;
     const ox=baw*0.5+_sin(t*g0*0.38+_rph[0])*baw*0.18+_cos(t*g2*0.21+_rph[1])*baw*0.09;
     const oy=bah*0.5+_cos(t*g1*0.31+_rph[2])*bah*0.18+_sin(t*g3*0.17+_rph[3])*bah*0.09;
-    // Update shared animation center for text rendering
-    window.__animCenter.ox = ox;
-    window.__animCenter.oy = oy;
     bctx.translate(ox,oy);
     bctx.rotate(t*g4*0.045+_rph[4]);
     const sc=0.82+_sin(t*g5*0.55+_rph[5])*0.32+_cos(t*g6*0.29+_rph[6])*0.10;
@@ -205,156 +201,6 @@ function D(){
 }
  
 A();
-</script>
-      <script type="module">
-import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
-
-// Text content - lorem ipsum
-const LOREM_IPSUM = `"  I'd just like to interject for a moment. What you're refering to as Linux, is in fact, GNU/Linux, or as I've recently taken to calling it, GNU plus Linux. Linux is not an operating system unto itself, but rather another free component of a fully functioning GNU system made useful by the GNU corelibs, shell utilities and vital system components comprising a full OS as defined by POSIX.
-
-Many computer users run a modified version of the GNU system every day, without realizing it. Through a peculiar turn of events, the version of GNU which is widely used today is often called Linux, and many of its users are not aware that it is basically the GNU system, developed by the GNU Project.
-
-There really is a Linux, and these people are using it, but it is just a part of the system they use. Linux is the kernel: the program in the system that allocates the machine's resources to the other programs that you run. The kernel is an essential part of an operating system, but useless by itself; it can only function in the context of a complete operating system. Linux is normally used in combination with the GNU operating system: the whole system is basically GNU with Linux added, or GNU/Linux. All the so-called Linux distributions are really distributions of GNU/Linux.  "`;
-
-const textCanvas = document.getElementById('textCanvas');
-const textCtx = textCanvas.getContext('2d');
-
-// Text configuration
-const BASE_FONT_SIZE = 20;
-const FONT_FAMILY = '"PT Serif", Georgia, serif';
-const FONT = BASE_FONT_SIZE + 'px ' + FONT_FAMILY;
-const LINE_HEIGHT = 30;
-const TEXT_MARGIN = 10;
-
-// Magnifying glass parameters
-const EXCLUSION_RADIUS = 35;       // No text drawn inside this radius
-const MAGNIFICATION_RADIUS = 150;  // Beyond this, text is normal size
-const MAX_SCALE = 1.5;            // Text at exclusion edge is 1/3 bigger
-const FALLOFF_K = 0.025;           // Exponential falloff constant
-
-// Prepare text once (expensive operation)
-let prepared = null;
-let canvasWidth = 0;
-let canvasHeight = 0;
-
-function resizeTextCanvas() {
-    const contentEl = document.getElementById('content');
-    const contentWidth = contentEl ? contentEl.clientWidth : window.innerWidth;
-    
-    prepared = prepareWithSegments(LOREM_IPSUM, FONT);
-    const { lineCount } = layoutWithLines(prepared, contentWidth, LINE_HEIGHT);
-    const neededHeight = lineCount * LINE_HEIGHT;
-    
-    canvasWidth = contentWidth;
-    canvasHeight = neededHeight;
-    
-    textCanvas.style.width = canvasWidth + 'px';
-    textCanvas.style.height = canvasHeight + 'px';
-    textCanvas.width = canvasWidth * window.devicePixelRatio;
-    textCanvas.height = canvasHeight * window.devicePixelRatio;
-    textCtx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
-    
-    return { width: canvasWidth, height: canvasHeight };
-}
-
-// Compute magnification scale based on distance from animation center
-// Returns scale factor: 1.33 at exclusion edge, drops exponentially to 1.0 at mag radius
-function getMagnificationScale(distance) {
-    if (distance < EXCLUSION_RADIUS) return 0; // Inside exclusion zone
-    if (distance > MAGNIFICATION_RADIUS) return 1.0; // Outside magnification zone
-    
-    // Exponential falloff: scale goes from MAX_SCALE at exclusion edge to 1.0 at mag radius
-    const t = (distance - EXCLUSION_RADIUS) / (MAGNIFICATION_RADIUS - EXCLUSION_RADIUS);
-    return 1.0 + (MAX_SCALE - 1.0) * Math.exp(-t * 6); // exp(-6) ~ 0.0025, so at mag radius scale ~ 1.0
-}
-
-// Render text with magnifying glass effect - character by character
-function renderText() {
-    if (!prepared) return;
-    
-    const canvasW = canvasWidth;
-    const canvasH = canvasHeight;
-    
-    // Get animation center in canvas-local coordinates
-    const rect = textCanvas.getBoundingClientRect();
-    const centerX = window.__animCenter.ox - rect.left;
-    const centerY = window.__animCenter.oy - rect.top;
-    
-    // Clear canvas
-    textCtx.clearRect(0, 0, canvasW, canvasH);
-    textCtx.textBaseline = 'alphabetic';
-    textCtx.textAlign = 'left';
-    textCtx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-    
-    // Get layout lines at content width
-    const contentW = canvasW - 2 * TEXT_MARGIN;
-    const { lines } = layoutWithLines(prepared, contentW, LINE_HEIGHT);
-    
-    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-        const line = lines[lineIdx];
-        const lineYBase = lineIdx * LINE_HEIGHT + LINE_HEIGHT * 0.8;
-        
-        // Skip empty lines
-        if (!line.text) continue;
-        
-        // Measure all characters in this line at base font size
-        const charWidths = [];
-        let cumulativeX = TEXT_MARGIN;
-        
-        for (const ch of line.text) {
-            textCtx.font = FONT;
-            const w = textCtx.measureText(ch).width;
-            charWidths.push({ ch, width: w, x: cumulativeX });
-            cumulativeX += w;
-        }
-        
-        // Render each character individually with magnification
-        for (const charInfo of charWidths) {
-            const ch = charInfo.ch;
-            const baseX = charInfo.x + charInfo.width / 2; // center of character
-            const baseY = lineYBase;
-            
-            // Distance from animation center
-            const dx = baseX - centerX;
-            const dy = baseY - centerY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            
-            // Check if character is within exclusion zone
-            if (dist < EXCLUSION_RADIUS) continue;
-            
-            // Compute magnification scale
-            const scale = getMagnificationScale(dist);
-            if (scale <= 0) continue;
-            
-            // Draw character with magnified font size, centered at its nominal position
-            const fontSize = BASE_FONT_SIZE * scale;
-            textCtx.save();
-            textCtx.font = fontSize + 'px ' + FONT_FAMILY;
-            textCtx.textAlign = 'left';
-            textCtx.textBaseline = 'alphabetic';
-            textCtx.fillStyle = 'rgba(255, 255, 255, ' + (0.85 + (scale - 1.0) * 0.2) + ')';
-            
-            // Fill text centered at the character's nominal position
-            // (draw slightly to the left to center the magnified char)
-            const charOffset = (charInfo.width * (scale - 1.0)) / 2;
-            textCtx.fillText(ch, charInfo.x - charOffset, lineYBase);
-            textCtx.restore();
-        }
-    }
-}
-
-// Initialize
-resizeTextCanvas();
-window.addEventListener('resize', () => {
-    resizeTextCanvas();
-});
-
-// Render text on each animation frame
-function renderLoop() {
-    renderText();
-    requestAnimationFrame(renderLoop);
-}
-requestAnimationFrame(renderLoop);
 </script>
       <script>
         (function() {
