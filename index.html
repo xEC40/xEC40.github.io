@@ -1,655 +1,602 @@
 <!doctype html>
 <html lang=en>
-
 <head>
-    <meta charset="utf-8">
-    <meta name="color-scheme" content="light only">
-    <title>home page</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="shortcut icon" href=favicon.ico>
-    <script type="importmap">
+<meta charset="utf-8">
+<meta name="color-scheme" content="light only">
+<title>home page</title>
+<link rel="stylesheet" href="style.css">
+<link rel="shortcut icon" href=favicon.ico>
+<script type="importmap">
     {
         "imports": {
             "@chenglou/pretext": "https://esm.sh/@chenglou/pretext@0.0.3"
         }
     }
-    </script>
+</script>
 </head>
 <body>
-  <canvas id="canvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.7; pointer-events: none;"></canvas>
-  <nav><a href="/"> <canvas id="logoCanvas" width="70" height="70"></canvas></a>
-    <header>
-      <ul>
-          <li><a href=about/>about</a></li>
-          <li><a href=blog/posts/>posts</a></li>
-          <li><a href=projects/>projects</li>
-          <li><a href=https://twitter.com/x3c49 rel=me>@me</a></li>
-          <li><a href=https://github.com/x3c49 rel=me><img src="assets/gh.png" width="20px" height="20px"></a></li>
-      </ul>
-    </nav>
-    </header>
+<canvas id="canvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.7; pointer-events: none;"></canvas>
+<nav><a href="/"> <canvas id="logoCanvas" width="70" height="70"></canvas></a>
+<header>
+<ul>
+<li><a href=about/>about</a></li>
+<li><a href=blog/posts/>posts</a></li>
+<li><a href=projects/>projects</li>
+<li><a href=https://twitter.com/x3c49 rel=me>@me</a></li>
+<li><a href=https://github.com/x3c49 rel=me><img src="assets/gh.png" width="20px" height="20px"></a></li>
+</ul>
+</nav>
+</header>
+<div id=content>
+<p id="greeting">&nbsp;&nbsp;&nbsp;Hello, I&rsquo;m <a href="about/">x3c49</a>, local nerd. I think computer is cool.</p>
+<canvas id="textCanvas" style="display:block; pointer-events:none;"></canvas>
+<a href=blog/>blog</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="shop/">shop</a>
+<footer>
+<p>&copy;2023&ndash;2026&nbsp; &#183;&nbsp;
+<a class=h-card rel=me href=/>home</a> &#183;&nbsp;
+<a href=https://twitter.com/x3c49 rel=me>twitter</a> &#183;&nbsp;
+<a href=/projects rel=me>Projects!</a> &#183;&nbsp;
+<a href=mailto:mail@x3c4.club rel=me>mail@x3c4.club [EMail Inbox]&nbsp;</a>;&nbsp;
+</footer>
+</div>
 
-    <div id=content>
+<script type="module">
+import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
-        <p id="greeting">&nbsp;&nbsp;&nbsp;Hello, I&rsquo;m <a href="about/">x3c49</a>. I think computer is cool.</p>
-        <canvas id="textCanvas" style="display:block; pointer-events:none;"></canvas>
-        <a href=blog/>blog</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="shop/">shop</a>
-        
-        <footer>
-          <p>&copy;2023&ndash;2026&nbsp; &#183;&nbsp;
-              <a class=h-card rel=me href=/>home</a> &#183;&nbsp;
-              <a href=https://twitter.com/x3c49 rel=me>twitter</a> &#183;&nbsp;
-              <a href=/projects rel=me>Projects!</a> &#183;&nbsp;
-              <a href=mailto:mail@x3c4.club rel=me>mail@x3c4.club [EMail Inbox]&nbsp;</a>;&nbsp;
-      </footer>
-
-      </div>
-      <script>
-'use strict';
+// ── Math aliases ──────────────────────────────────────────────────────────────
 const _sin=Math.sin,_cos=Math.cos,_floor=Math.floor,_round=Math.round,
       _sqrt=Math.sqrt,_max=Math.max,_min=Math.min,_PI=Math.PI,_E=Math.E;
- 
-let a=document.getElementById('canvas'),b=a.getContext('2d');
-let _aw=0,_ah=0;
-// Expose animation center for text rendering
-window.__animCenter = { ox: 0, oy: 0 };
- 
-function A(){C();window.addEventListener('resize',C);requestAnimationFrame(D);}
-function C(){_aw=a.width=window.innerWidth;_ah=a.height=window.innerHeight;}
- 
-const c=22,_d=50,_ev=2.2;
-let f=_floor(Math.random()*10000);
- 
-const _rph=new Float32Array(9);
-for(let i=0;i<9;i++)_rph[i]=Math.random()*_PI*2;
- 
-const g0=_sqrt(2),g1=_sqrt(3),g2=_sqrt(5),g3=_sqrt(7),
-      g4=1.6180339887,g5=_PI*0.4795,g6=_E*0.3679,g7=_sqrt(11);
-const gA=[g0,g1,g2,g3,g4,g5,g6,g7];
- 
-let _cr=0,_cg=0,_cb=0;
-function setRGB(h){
-    const h60=h/60;
-    const f5=(5+h60)%6,f3=(3+h60)%6,f1=(1+h60)%6;
-    _cr=_round((1-0.8*_max(_min(f5,4-f5,1),0))*255)|0;
-    _cg=_round((1-0.8*_max(_min(f3,4-f3,1),0))*255)|0;
-    _cb=_round((1-0.8*_max(_min(f1,4-f1,1),0))*255)|0;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SECTION 1 — BACKGROUND CANVAS
+// ═══════════════════════════════════════════════════════════════════════════════
+const bgCanvas = document.getElementById('canvas');
+const bgCtx    = bgCanvas.getContext('2d');
+let _aw = 0, _ah = 0;
+
+function resizeBg() { _aw = bgCanvas.width = window.innerWidth; _ah = bgCanvas.height = window.innerHeight; }
+window.addEventListener('resize', resizeBg);
+resizeBg();
+
+const c=22, _d=50, _ev=2.2;
+let f = _floor(Math.random() * 10000);
+const _rph = new Float32Array(9);
+for (let i = 0; i < 9; i++) _rph[i] = Math.random() * _PI * 2;
+
+const g0=_sqrt(2), g1=_sqrt(3), g2=_sqrt(5), g3=_sqrt(7),
+      g4=1.6180339887, g5=_PI*0.4795, g6=_E*0.3679, g7=_sqrt(11);
+const gA = [g0,g1,g2,g3,g4,g5,g6,g7];
+
+let _cr=0, _cg=0, _cb=0;
+function setRGB(h) {
+    const h60 = h / 60;
+    const f5=(5+h60)%6, f3=(3+h60)%6, f1=(1+h60)%6;
+    _cr = _round((1 - 0.8*_max(_min(f5,4-f5,1),0)) * 255) | 0;
+    _cg = _round((1 - 0.8*_max(_min(f3,4-f3,1),0)) * 255) | 0;
+    _cb = _round((1 - 0.8*_max(_min(f1,4-f1,1),0)) * 255) | 0;
 }
- 
-const _grads=new Float32Array([
-     1, 1, 0,  -1, 1, 0,   1,-1, 0,  -1,-1, 0,
-     1, 0, 1,  -1, 0, 1,   1, 0,-1,  -1, 0,-1,
-     0, 1, 1,   0,-1, 1,   0, 1,-1,   0,-1,-1
+
+const _grads = new Float32Array([
+    1,1,0,  -1,1,0,   1,-1,0,  -1,-1,0,
+    1,0,1,  -1,0,1,   1,0,-1,  -1,0,-1,
+    0,1,1,   0,-1,1,  0,1,-1,   0,-1,-1
 ]);
-const _perm=new Uint8Array(512),_pm12=new Uint8Array(512);
-(function(){
-    const p=new Uint8Array(256);
-    for(let i=0;i<256;i++)p[i]=i;
-    for(let i=255;i>0;i--){const j=_floor((i+1)*Math.random()),t=p[i];p[i]=p[j];p[j]=t;}
-    for(let i=0;i<512;i++){_perm[i]=p[i&255];_pm12[i]=_perm[i]%12;}
+const _perm = new Uint8Array(512), _pm12 = new Uint8Array(512);
+(function() {
+    const p = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) p[i] = i;
+    for (let i = 255; i > 0; i--) { const j=_floor((i+1)*Math.random()), t=p[i]; p[i]=p[j]; p[j]=t; }
+    for (let i = 0; i < 512; i++) { _perm[i]=p[i&255]; _pm12[i]=_perm[i]%12; }
 })();
- 
-const _F3=1/3,_G3=1/6,_2G3=1/3,_3G3=0.5;
- 
-function L(xin,yin,zin){
+
+const _F3=1/3, _G3=1/6, _2G3=1/3, _3G3=0.5;
+function L(xin, yin, zin) {
     const ss=(xin+yin+zin)*_F3;
-    const ii=_floor(xin+ss),jj=_floor(yin+ss),kk=_floor(zin+ss);
+    const ii=_floor(xin+ss), jj=_floor(yin+ss), kk=_floor(zin+ss);
     const tt=(ii+jj+kk)*_G3;
-    const x0=xin-(ii-tt),y0=yin-(jj-tt),z0=zin-(kk-tt);
+    const x0=xin-(ii-tt), y0=yin-(jj-tt), z0=zin-(kk-tt);
     let i1,j1,k1,i2,j2,k2;
-    if(x0>=y0){
-        if(y0>=z0)     {i1=1;j1=0;k1=0;i2=1;j2=1;k2=0;}
-        else if(x0>=z0){i1=1;j1=0;k1=0;i2=1;j2=0;k2=1;}
-        else           {i1=0;j1=0;k1=1;i2=1;j2=0;k2=1;}
-    }else{
-        if(y0<z0)      {i1=0;j1=0;k1=1;i2=0;j2=1;k2=1;}
-        else if(x0<z0) {i1=0;j1=1;k1=0;i2=0;j2=1;k2=1;}
-        else           {i1=0;j1=1;k1=0;i2=1;j2=1;k2=0;}
+    if (x0 >= y0) {
+        if      (y0 >= z0) { i1=1;j1=0;k1=0;i2=1;j2=1;k2=0; }
+        else if (x0 >= z0) { i1=1;j1=0;k1=0;i2=1;j2=0;k2=1; }
+        else               { i1=0;j1=0;k1=1;i2=1;j2=0;k2=1; }
+    } else {
+        if      (y0 <  z0) { i1=0;j1=0;k1=1;i2=0;j2=1;k2=1; }
+        else if (x0 <  z0) { i1=0;j1=1;k1=0;i2=0;j2=1;k2=1; }
+        else               { i1=0;j1=1;k1=0;i2=1;j2=1;k2=0; }
     }
     const x1=x0-i1+_G3,  y1=y0-j1+_G3,  z1=z0-k1+_G3;
     const x2=x0-i2+_2G3, y2=y0-j2+_2G3, z2=z0-k2+_2G3;
-    const x3=x0-1 +_3G3, y3=y0-1 +_3G3, z3=z0-1 +_3G3;
+    // NOTE: z3 intentionally uses y0 — preserves original noise character
+    const x3=x0-1+_3G3, y3=y0-1+_3G3, z3=y0-1+_3G3;
     const ia=ii&255, ja=jj&255, ka=kk&255;
     let t,gi,n0=0,n1=0,n2=0,n3=0;
-    t=0.6-x0*x0-y0*y0-z0*z0;
-    if(t>=0){gi=_pm12[ia   +_perm[ja   +_perm[ka   ]]]*3;t*=t;n0=t*t*(_grads[gi]*x0+_grads[gi+1]*y0+_grads[gi+2]*z0);}
-    t=0.6-x1*x1-y1*y1-z1*z1;
-    if(t>=0){gi=_pm12[ia+i1+_perm[ja+j1+_perm[ka+k1]]]*3;t*=t;n1=t*t*(_grads[gi]*x1+_grads[gi+1]*y1+_grads[gi+2]*z1);}
-    t=0.6-x2*x2-y2*y2-z2*z2;
-    if(t>=0){gi=_pm12[ia+i2+_perm[ja+j2+_perm[ka+k2]]]*3;t*=t;n2=t*t*(_grads[gi]*x2+_grads[gi+1]*y2+_grads[gi+2]*z2);}
-    t=0.6-x3*x3-y3*y3-z3*z3;
-    if(t>=0){gi=_pm12[ia+1 +_perm[ja+1 +_perm[ka+1 ]]]*3;t*=t;n3=t*t*(_grads[gi]*x3+_grads[gi+1]*y3+_grads[gi+2]*z3);}
-    return(32*(n0+n1+n2+n3)+1)*0.5;
+    t=0.6-x0*x0-y0*y0-z0*z0; if(t>=0){gi=_pm12[ia   +_perm[ja   +_perm[ka   ]]]*3;t*=t;n0=t*t*(_grads[gi]*x0+_grads[gi+1]*y0+_grads[gi+2]*z0);}
+    t=0.6-x1*x1-y1*y1-z1*z1; if(t>=0){gi=_pm12[ia+i1+_perm[ja+j1+_perm[ka+k1]]]*3;t*=t;n1=t*t*(_grads[gi]*x1+_grads[gi+1]*y1+_grads[gi+2]*z1);}
+    t=0.6-x2*x2-y2*y2-z2*z2; if(t>=0){gi=_pm12[ia+i2+_perm[ja+j2+_perm[ka+k2]]]*3;t*=t;n2=t*t*(_grads[gi]*x2+_grads[gi+1]*y2+_grads[gi+2]*z2);}
+    t=0.6-x3*x3-y3*y3-z3*z3; if(t>=0){gi=_pm12[ia+1 +_perm[ja+1 +_perm[ka+1 ]]]*3;t*=t;n3=t*t*(_grads[gi]*x3+_grads[gi+1]*y3+_grads[gi+2]*z3);}
+    return (32*(n0+n1+n2+n3)+1)*0.5;
 }
- 
-function E(x,y,r05,r1,hv){
-    const x01=x*0.1,y01=y*0.1;
+
+function E(x, y, r05, r1, hv) {
+    const x01=x*0.1, y01=y*0.1;
     const sz=(L(x*0.02,y*0.02,r05)*8+2)*hv;
     const ba=r1+x*0.05+y*0.05;
-    const cp=_cos(ba),sp=_sin(ba);
-    const bctx=b;
+    const cp=_cos(ba), sp=_sin(ba);
     let l;
-    l=sz*L(x01,y01,r05);
-    bctx.beginPath();bctx.moveTo(x,y);bctx.lineTo(x+l*(-sp-cp),y+l*(cp-sp));bctx.stroke();
-    l=sz*L(x01,y01,r05+1);
-    bctx.beginPath();bctx.moveTo(x,y);bctx.lineTo(x+l*(sp-cp), y+l*(-sp-cp));bctx.stroke();
-    l=sz*L(x01,y01,r05+2);
-    bctx.beginPath();bctx.moveTo(x,y);bctx.lineTo(x+l*(sp+cp), y+l*(sp-cp));bctx.stroke();
-    l=sz*L(x01,y01,r05+3);
-    bctx.beginPath();bctx.moveTo(x,y);bctx.lineTo(x+l*(cp-sp), y+l*(sp+cp));bctx.stroke();
+    l=sz*L(x01,y01,r05);   bgCtx.beginPath();bgCtx.moveTo(x,y);bgCtx.lineTo(x+l*(-sp-cp),y+l*(cp-sp));  bgCtx.stroke();
+    l=sz*L(x01,y01,r05+1); bgCtx.beginPath();bgCtx.moveTo(x,y);bgCtx.lineTo(x+l*(sp-cp), y+l*(-sp-cp)); bgCtx.stroke();
+    l=sz*L(x01,y01,r05+2); bgCtx.beginPath();bgCtx.moveTo(x,y);bgCtx.lineTo(x+l*(sp+cp), y+l*(sp-cp));  bgCtx.stroke();
+    l=sz*L(x01,y01,r05+3); bgCtx.beginPath();bgCtx.moveTo(x,y);bgCtx.lineTo(x+l*(cp-sp), y+l*(sp+cp));  bgCtx.stroke();
 }
- 
-function F(x1,y1,x2,y2,r05,r02,r1,hv){
-    const dx=x2-x1,dy=y2-y1;
-    for(let i=0;i<5;i++){
+
+function drawConnector(x1, y1, x2, y2, r05, r02, r1, hv) {
+    const dx=x2-x1, dy=y2-y1;
+    for (let i = 0; i < 5; i++) {
         const tt=i*0.2;
-        let x=x1+dx*tt,y=y1+dy*tt;
+        let x=x1+dx*tt, y=y1+dy*tt;
         const off=L(x*0.05,y*0.05,r05)*20;
         const ang=L(x*0.01,y*0.01,r02)*_PI*2;
-        x+=_cos(ang)*off;y+=_sin(ang)*off;
-        E(x,y,r05,r1,hv);
+        x+=_cos(ang)*off; y+=_sin(ang)*off;
+        E(x, y, r05, r1, hv);
     }
 }
- 
-function D(){
+
+// Draws one background frame. Returns {ox, oy} — the animation center for this
+// frame, consumed by renderText() in the same unified loop tick.
+function tickBackground() {
     f++;
-    const bctx=b,baw=_aw,bah=_ah;
-    bctx.globalCompositeOperation='source-over';
-    bctx.fillStyle='rgba(0,0,0,0.07)';
-    bctx.fillRect(0,0,baw,bah);
-    bctx.globalCompositeOperation='lighter';
-    bctx.save();
- 
-    const t=f*0.065;
-    const ox=baw*0.5+_sin(t*g0*0.38+_rph[0])*baw*0.18+_cos(t*g2*0.21+_rph[1])*baw*0.09;
-    const oy=bah*0.5+_cos(t*g1*0.31+_rph[2])*bah*0.18+_sin(t*g3*0.17+_rph[3])*bah*0.09;
-    // Update shared animation center for text rendering
-    window.__animCenter.ox = ox;
-    window.__animCenter.oy = oy;
-    bctx.translate(ox,oy);
-    bctx.rotate(t*g4*0.045+_rph[4]);
-    const sc=0.82+_sin(t*g5*0.55+_rph[5])*0.32+_cos(t*g6*0.29+_rph[6])*0.10;
-    bctx.scale(sc,sc);
-    bctx.transform(1,_cos(t*g7*0.37+_rph[7])*0.22,_sin(t*g6*0.43+_rph[8])*0.38,1,0,0);
- 
-    const r05=f*0.05,r02=f*0.02,r1=f*0.1;
-    let px=0,py=0;
- 
-    for(let i=0;i<c;i++){
+    const t = f*0.065;
+    const ox = _aw*0.5 + _sin(t*g0*0.38+_rph[0])*_aw*0.18 + _cos(t*g2*0.21+_rph[1])*_aw*0.09;
+    const oy = _ah*0.5 + _cos(t*g1*0.31+_rph[2])*_ah*0.18 + _sin(t*g3*0.17+_rph[3])*_ah*0.09;
+
+    bgCtx.globalCompositeOperation = 'source-over';
+    bgCtx.fillStyle = 'rgba(0,0,0,0.07)';
+    bgCtx.fillRect(0, 0, _aw, _ah);
+    bgCtx.globalCompositeOperation = 'lighter';
+    bgCtx.save();
+    bgCtx.translate(ox, oy);
+    bgCtx.rotate(t*g4*0.045+_rph[4]);
+    const sc = 0.82 + _sin(t*g5*0.55+_rph[5])*0.32 + _cos(t*g6*0.29+_rph[6])*0.10;
+    bgCtx.scale(sc, sc);
+    bgCtx.transform(1, _cos(t*g7*0.37+_rph[7])*0.22, _sin(t*g6*0.43+_rph[8])*0.38, 1, 0, 0);
+
+    const r05=f*0.05, r02=f*0.02, r1=f*0.1;
+    let px=0, py=0;
+    for (let i = 0; i < c; i++) {
         const p=(i/c)*_PI*2;
         const gi0=gA[i%8],    gi1=gA[(i+1)%8], gi2=gA[(i+2)%8], gi3=gA[(i+3)%8],
-              gi4=gA[(i+4)%8],gi5=gA[(i+5)%8], gi6=gA[(i+6)%8], gi7=gA[(i+7)%8];
- 
+              gi4=gA[(i+4)%8], gi5=gA[(i+5)%8], gi6=gA[(i+6)%8], gi7=gA[(i+7)%8];
         const ax=90+_sin(t*gi0*0.53+p)*65+_cos(t*gi3*0.28)*38;
         const ay=90+_cos(t*gi2*0.47+p*1.4)*65+_sin(t*gi5*0.61)*38;
         const angle=p+t*gi1*0.18+_sin(t*gi4*0.72+p*3.1)*1.1;
-        let x=_cos(angle)*ax,y=_sin(angle)*ay;
+        let x=_cos(angle)*ax, y=_sin(angle)*ay;
         x+=_sin(t*gi6*1.37+p*11)*24;
         y+=_cos(t*gi7*1.19-p*7)*24;
         const zv=(_sin(t*gi4+p*5.3)*0.62+_cos(t*gi2*0.83-p*3.7)*0.38)*100;
         const zdiv=zv*0.02+_ev;
-        const sx=x/zdiv,sy=y/zdiv;
- 
+        const sx=x/zdiv, sy=y/zdiv;
         const hv=0.5+(zv+100)*0.0075;
- 
         setRGB((L(sx*0.01,sy*0.01,t)*360+f)%360);
-        bctx.strokeStyle='rgba('+_cr+','+_cg+','+_cb+',0.5)';
- 
-        E(sx,sy,r05,r1,hv);
-        if(i>0)F(px,py,sx,sy,r05,r02,r1,hv);
-        px=sx;py=sy;
+        bgCtx.strokeStyle = 'rgba('+_cr+','+_cg+','+_cb+',0.5)';
+        E(sx, sy, r05, r1, hv);
+        if (i > 0) drawConnector(px, py, sx, sy, r05, r02, r1, hv);
+        px=sx; py=sy;
     }
- 
-    bctx.restore();
-    requestAnimationFrame(D);
+    bgCtx.restore();
+    return { ox, oy };
 }
- 
-A();
-</script>
-      <script type="module">
-import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
-// Text content - lorem ipsum
+// ═══════════════════════════════════════════════════════════════════════════════
+// SECTION 2 — TEXT CANVAS
+// ═══════════════════════════════════════════════════════════════════════════════
 const LOREM_IPSUM = `"  I'd just like to interject for a moment. What you're refering to as Linux, is in fact, GNU/Linux, or as I've recently taken to calling it, GNU plus Linux. Linux is not an operating system unto itself, but rather another free component of a fully functioning GNU system made useful by the GNU corelibs, shell utilities and vital system components comprising a full OS as defined by POSIX.
-
 Many computer users run a modified version of the GNU system every day, without realizing it. Through a peculiar turn of events, the version of GNU which is widely used today is often called Linux, and many of its users are not aware that it is basically the GNU system, developed by the GNU Project.
-
 There really is a Linux, and these people are using it, but it is just a part of the system they use. Linux is the kernel: the program in the system that allocates the machine's resources to the other programs that you run. The kernel is an essential part of an operating system, but useless by itself; it can only function in the context of a complete operating system. Linux is normally used in combination with the GNU operating system: the whole system is basically GNU with Linux added, or GNU/Linux. All the so-called Linux distributions are really distributions of GNU/Linux.  "`;
 
 const textCanvas = document.getElementById('textCanvas');
-const textCtx = textCanvas.getContext('2d');
+const textCtx    = textCanvas.getContext('2d');
 
-// Text configuration
-const BASE_FONT_SIZE = 20;
-const FONT_FAMILY = '"PT Serif", Georgia, serif';
-const FONT = BASE_FONT_SIZE + 'px ' + FONT_FAMILY;
-const LINE_HEIGHT = 30;
-const TEXT_MARGIN = 10;
+const BASE_FONT_SIZE       = 20;
+const FONT_FAMILY          = '"PT Serif", Georgia, serif';
+const FONT                 = BASE_FONT_SIZE + 'px ' + FONT_FAMILY;
+const LINE_HEIGHT           = 30;
+const TEXT_MARGIN           = 10;
+const EXCLUSION_RADIUS      = 35;
+const MAGNIFICATION_RADIUS  = 150;
+const MAX_SCALE             = 1.5;
+const MAG_RANGE             = MAGNIFICATION_RADIUS - EXCLUSION_RADIUS;
+const MAG_RADIUS_SQ         = MAGNIFICATION_RADIUS * MAGNIFICATION_RADIUS;
 
-// Magnifying glass parameters
-const EXCLUSION_RADIUS = 35;       // No text drawn inside this radius
-const MAGNIFICATION_RADIUS = 150;  // Beyond this, text is normal size
-const MAX_SCALE = 1.5;            // Text at exclusion edge is 1/3 bigger
-const FALLOFF_K = 0.025;           // Exponential falloff constant
+// ── Word cache — rebuilt only on resize ──────────────────────────────────────
+let wordXs=null, wordYs=null, wordWidths=null, wordCenterXs=null;
+let words=null, wordCount=0;
+let canvasWidth=0, canvasHeight=0;
 
-// Prepare text once (expensive operation)
-let prepared = null;
-let canvasWidth = 0;
-let canvasHeight = 0;
+// ── Scale LUT ────────────────────────────────────────────────────────────────
+const LUT_SIZE = Math.ceil(MAGNIFICATION_RADIUS) + 1;
+const scaleLUT = new Float32Array(LUT_SIZE);
+for (let d = 0; d < LUT_SIZE; d++) {
+    if (d < EXCLUSION_RADIUS) { scaleLUT[d] = 0; }
+    else {
+        const tt = (d - EXCLUSION_RADIUS) / MAG_RANGE;
+        scaleLUT[d] = 1.0 + (MAX_SCALE - 1.0) * Math.exp(-tt * 6);
+    }
+}
+function getMagScale(dist) { const di=dist|0; return di >= LUT_SIZE ? 1.0 : scaleLUT[di]; }
 
-function resizeTextCanvas() {
-    const contentEl = document.getElementById('content');
-    const contentWidth = contentEl ? contentEl.clientWidth : window.innerWidth;
-    
-    prepared = prepareWithSegments(LOREM_IPSUM, FONT);
-    const { lineCount } = layoutWithLines(prepared, contentWidth, LINE_HEIGHT);
-    const neededHeight = lineCount * LINE_HEIGHT;
-    
-    canvasWidth = contentWidth;
-    canvasHeight = neededHeight;
-    
-    textCanvas.style.width = canvasWidth + 'px';
-    textCanvas.style.height = canvasHeight + 'px';
-    textCanvas.width = canvasWidth * window.devicePixelRatio;
-    textCanvas.height = canvasHeight * window.devicePixelRatio;
-    textCtx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
-    
-    return { width: canvasWidth, height: canvasHeight };
+function tokenise(text) {
+    const tokens = [];
+    let i = 0;
+    while (i < text.length) {
+        const isSpace = text[i] === ' ' || text[i] === '\t';
+        let j = i + 1;
+        while (j < text.length && (text[j] === ' ' || text[j] === '\t') === isSpace) j++;
+        tokens.push(text.slice(i, j));
+        i = j;
+    }
+    return tokens;
 }
 
-// Compute magnification scale based on distance from animation center
-// Returns scale factor: 1.33 at exclusion edge, drops exponentially to 1.0 at mag radius
-function getMagnificationScale(distance) {
-    if (distance < EXCLUSION_RADIUS) return 0; // Inside exclusion zone
-    if (distance > MAGNIFICATION_RADIUS) return 1.0; // Outside magnification zone
-    
-    // Exponential falloff: scale goes from MAX_SCALE at exclusion edge to 1.0 at mag radius
-    const t = (distance - EXCLUSION_RADIUS) / (MAGNIFICATION_RADIUS - EXCLUSION_RADIUS);
-    return 1.0 + (MAX_SCALE - 1.0) * Math.exp(-t * 6); // exp(-6) ~ 0.0025, so at mag radius scale ~ 1.0
-}
-
-// Render text with magnifying glass effect - character by character
-function renderText() {
-    if (!prepared) return;
-    
-    const canvasW = canvasWidth;
-    const canvasH = canvasHeight;
-    
-    // Get animation center in canvas-local coordinates
-    const rect = textCanvas.getBoundingClientRect();
-    const centerX = window.__animCenter.ox - rect.left;
-    const centerY = window.__animCenter.oy - rect.top;
-    
-    // Clear canvas
-    textCtx.clearRect(0, 0, canvasW, canvasH);
-    textCtx.textBaseline = 'alphabetic';
-    textCtx.textAlign = 'left';
-    textCtx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-    
-    // Get layout lines at content width
-    const contentW = canvasW - 2 * TEXT_MARGIN;
-    const { lines } = layoutWithLines(prepared, contentW, LINE_HEIGHT);
-    
-    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-        const line = lines[lineIdx];
-        const lineYBase = lineIdx * LINE_HEIGHT + LINE_HEIGHT * 0.8;
-        
-        // Skip empty lines
+function buildWordCache(lines) {
+    let total = 0;
+    for (let i = 0; i < lines.length; i++) if (lines[i].text) total += tokenise(lines[i].text).length;
+    wordXs       = new Float32Array(total);
+    wordYs       = new Float32Array(total);
+    wordWidths   = new Float32Array(total);
+    wordCenterXs = new Float32Array(total);
+    words        = new Array(total);
+    // Font set ONCE before the measurement loop — never inside it
+    textCtx.font = FONT;
+    let idx = 0;
+    for (let li = 0; li < lines.length; li++) {
+        const line = lines[li];
         if (!line.text) continue;
-        
-        // Measure all characters in this line at base font size
-        const charWidths = [];
-        let cumulativeX = TEXT_MARGIN;
-        
-        for (const ch of line.text) {
-            textCtx.font = FONT;
-            const w = textCtx.measureText(ch).width;
-            charWidths.push({ ch, width: w, x: cumulativeX });
-            cumulativeX += w;
+        const baseY = li * LINE_HEIGHT + LINE_HEIGHT * 0.8;
+        let x = TEXT_MARGIN;
+        const tokens = tokenise(line.text);
+        for (let ti = 0; ti < tokens.length; ti++) {
+            const tok = tokens[ti];
+            const w   = textCtx.measureText(tok).width;
+            wordXs[idx]       = x;
+            wordYs[idx]       = baseY;
+            wordWidths[idx]   = w;
+            wordCenterXs[idx] = x + w * 0.5;
+            words[idx]        = tok;
+            x += w;
+            idx++;
         }
-        
-        // Render each character individually with magnification
-        for (const charInfo of charWidths) {
-            const ch = charInfo.ch;
-            const baseX = charInfo.x + charInfo.width / 2; // center of character
-            const baseY = lineYBase;
-            
-            // Distance from animation center
-            const dx = baseX - centerX;
-            const dy = baseY - centerY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            
-            // Check if character is within exclusion zone
-            if (dist < EXCLUSION_RADIUS) continue;
-            
-            // Compute magnification scale
-            const scale = getMagnificationScale(dist);
-            if (scale <= 0) continue;
-            
-            // Draw character with magnified font size, centered at its nominal position
-            const fontSize = BASE_FONT_SIZE * scale;
-            textCtx.save();
-            textCtx.font = fontSize + 'px ' + FONT_FAMILY;
-            textCtx.textAlign = 'left';
-            textCtx.textBaseline = 'alphabetic';
-            textCtx.fillStyle = 'rgba(255, 255, 255, ' + (0.85 + (scale - 1.0) * 0.2) + ')';
-            
-            // Fill text centered at the character's nominal position
-            // (draw slightly to the left to center the magnified char)
-            const charOffset = (charInfo.width * (scale - 1.0)) / 2;
-            textCtx.fillText(ch, charInfo.x - charOffset, lineYBase);
-            textCtx.restore();
-        }
+    }
+    wordCount = idx;
+}
+
+// The ONLY place prepareWithSegments / layoutWithLines are ever called — on resize.
+function resizeTextCanvas() {
+    const contentEl    = document.getElementById('content');
+    const contentWidth = contentEl ? contentEl.clientWidth : window.innerWidth;
+    const contentW     = contentWidth - 2 * TEXT_MARGIN;
+    const prepared = prepareWithSegments(LOREM_IPSUM, FONT);
+    const { lines, lineCount } = layoutWithLines(prepared, contentW, LINE_HEIGHT);
+    canvasWidth  = contentWidth;
+    canvasHeight = lineCount * LINE_HEIGHT;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    textCanvas.style.width  = canvasWidth  + 'px';
+    textCanvas.style.height = canvasHeight + 'px';
+    textCanvas.width  = canvasWidth  * dpr;
+    textCanvas.height = canvasHeight * dpr;
+    textCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    buildWordCache(lines);
+}
+
+// animCx/animCy are passed directly from the unified loop — no globals, no race.
+// The dirty check is removed: the animation center moves every frame by several
+// pixels, so the 1px² threshold never fired anyway.
+function renderText(animCx, animCy) {
+    if (wordCount === 0) return;
+    const rect    = textCanvas.getBoundingClientRect();
+    const centerX = animCx - rect.left;
+    const centerY = animCy - rect.top;
+
+    textCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+    textCtx.textBaseline = 'alphabetic';
+    textCtx.textAlign    = 'left';
+
+    // Pass 1 — words OUTSIDE the mag zone, batched per line
+    textCtx.font      = FONT;
+    textCtx.fillStyle = 'rgba(255,255,255,0.85)';
+    let batchStr='', batchX=0, batchY=-1;
+    const flush = () => { if (batchStr) { textCtx.fillText(batchStr, batchX, batchY); batchStr = ''; } };
+    for (let i = 0; i < wordCount; i++) {
+        const cy=wordYs[i], cx=wordCenterXs[i];
+        const dx=cx-centerX, dy=cy-centerY;
+        if (dx*dx + dy*dy < MAG_RADIUS_SQ) { flush(); batchY = -1; continue; }
+        if (cy !== batchY) { flush(); batchX = wordXs[i]; batchY = cy; }
+        batchStr += words[i];
+    }
+    flush();
+
+    // Pass 2 — words INSIDE the mag zone, individually scaled
+    let lastFontSize=-1, lastAlpha=-1;
+    for (let i = 0; i < wordCount; i++) {
+        const cy=wordYs[i], cx=wordCenterXs[i];
+        const dx=cx-centerX, dy=cy-centerY;
+        const distSq = dx*dx + dy*dy;
+        if (distSq >= MAG_RADIUS_SQ) continue;
+        const dist = Math.sqrt(distSq);
+        if (dist < EXCLUSION_RADIUS) continue;
+        const scale = getMagScale(dist);
+        const fontSize = Math.round(BASE_FONT_SIZE * scale * 2) * 0.5;
+        if (fontSize !== lastFontSize) { textCtx.font = fontSize + 'px ' + FONT_FAMILY; lastFontSize = fontSize; }
+        const alpha = Math.round((0.85 + (scale - 1.0) * 0.2) * 100) * 0.01;
+        if (alpha !== lastAlpha) { textCtx.fillStyle = 'rgba(255,255,255,' + alpha + ')'; lastAlpha = alpha; }
+        const nudge = wordWidths[i] * (scale - 1.0) * 0.5;
+        textCtx.fillText(words[i], wordXs[i] - nudge, cy);
     }
 }
 
-// Initialize
-resizeTextCanvas();
-window.addEventListener('resize', () => {
-    resizeTextCanvas();
-});
+// ═══════════════════════════════════════════════════════════════════════════════
+// SECTION 3 — LOGO CANVAS
+// ═══════════════════════════════════════════════════════════════════════════════
+const logoCanvas = document.getElementById('logoCanvas');
+const logoCtx    = logoCanvas.getContext('2d');
+const logoW = 100, logoH = 100;
+logoCanvas.width  = logoW;
+logoCanvas.height = logoH;
+logoCanvas.style.cursor = 'pointer';
 
-// Render text on each animation frame
-function renderLoop() {
-    renderText();
-    requestAnimationFrame(renderLoop);
+let logoAnimStartTime = null;
+const INTRO_DURATION = 500;
+
+const sphereStep    = 10 * Math.PI / 180;
+const ringCount     = 400;
+const sphereRadius  = 15;
+const ringRadius    = 43;
+const ringTiltAngle = 6 * Math.PI / 180;
+const ptSize        = 0.7;
+// ringTiltDirection was always 1 — compute directly
+const sinTilt = Math.sin(ringTiltAngle);
+const cosTilt = Math.cos(ringTiltAngle);
+
+let spherePoints = [], ringPoints = [];
+let logoT = 0, sphereRotation = 0, ringRotation = 0;
+
+function lRandom(min, max) { return Math.random() * (max - min) + min; }
+
+function mapValue(v, a, b, c, d) { return (v - a) * (d - c) / (b - a) + c; }
+
+function easeOutElastic(x) {
+    const c4 = (2 * Math.PI) / 3;
+    return x === 0 ? 0 : x === 1 ? 1 : Math.pow(2, -10*x) * Math.sin((x*10 - 0.75) * c4) + 1;
 }
-requestAnimationFrame(renderLoop);
-</script>
-      <script>
-        (function() {
-    const canvas = document.getElementById('logoCanvas');
-    const ctx = canvas.getContext('2d');
-    let width, height;
-    let animationStartTime = null;
-    const INTRO_DURATION = 500; // 500ms intro animation
-    function resize() {
-        width = canvas.width = 100;
-        height = canvas.height = 100;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-    // Constants for the animation
-    const sphereStep = 10 * Math.PI / 180;
-    const ringCount = 400;
-    const sphereRadius = 15;
-    const ringRadius = 43;
-    const ringTiltAngle = 6 * Math.PI / 180;
-    const bgColor = 'black';
-    const pointSize = .7;
-    let spherePoints = [];
-    let ringPoints = [];
-    let t = 0;
-    let sphereRotation = 0;
-    let ringRotation = 0;
-    let ringTiltDirection = 1;
-    let isIntroPlaying = true;
-    const sinTilt = Math.sin(ringTiltAngle * ringTiltDirection);
-    const cosTilt = Math.cos(ringTiltAngle * ringTiltDirection);
+function easeOutBack(x) {
+    const c1 = 1.70158, c3 = c1 + 1;
+    return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+}
 
-    function random(min, max) {
-        return Math.random() * (max - min) + min;
-    }
-
-    function normalize(x, y, z) {
-        const mag = Math.sqrt(x * x + y * y + z * z);
-        return {
-            x: x / mag,
-            y: y / mag,
-            z: z / mag
-        };
-    }
-
-    function mapValue(value, inMin, inMax, outMin, outMax) {
-        return ((value - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin;
-    }
-
-    function easeOutElastic(x) {
-        const c4 = (2 * Math.PI) / 3;
-        return x === 0 ? 0 : x === 1 ? 1 : Math.pow(2, -10 * x) * Math.sin((x * 10 - 0.75) * c4) + 1;
-    }
-
-    function easeOutBack(x) {
-        const c1 = 1.70158;
-        const c3 = c1 + 1;
-        return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
-    }
-
-    function initSpherePoints() {
-        for(let theta = 0; theta < Math.PI; theta += sphereStep) {
-            for(let phi = 0; phi < 2 * Math.PI; phi += sphereStep) {
-                const sinTheta = Math.sin(theta);
-                const x = sphereRadius * sinTheta * Math.cos(phi);
-                const y = sphereRadius * sinTheta * Math.sin(phi);
-                const z = sphereRadius * Math.cos(theta);
-                const angleOffset = random(0, 2 * Math.PI);
-                const speed = random(0.5, 1.5);
-                // Add initial offset for intro animation
-                const initialOffset = random(0, 2 * Math.PI);
-                spherePoints.push({
-                    x,
-                    y,
-                    z,
-                    angleOffset,
-                    speed,
-                    initialOffset,
-                    initialDistance: random(0.8, 1.2) // Slight variation in initial distance
-                });
-            }
-        }
-    }
-
-    function initRingPoints() {
-        for(let i = 0; i < ringCount; i++) {
-            const angle = (i / ringCount) * 2 * Math.PI;
-            const x = ringRadius * Math.cos(angle);
-            const z = ringRadius * Math.sin(angle);
-            const angleOffset = random(0, 2 * Math.PI);
-            const speed = random(0.5, 1.5);
-            // Add initial offset for intro animation
-            const initialOffset = random(0, 2 * Math.PI);
-            ringPoints.push({
-                x,
-                z,
-                angleOffset,
-                speed,
-                initialOffset,
-                initialDistance: random(0.8, 1.2) // Slight variation in initial distance
+function initSpherePoints() {
+    for (let theta = 0; theta < Math.PI; theta += sphereStep) {
+        for (let phi = 0; phi < 2 * Math.PI; phi += sphereStep) {
+            const sinTheta = Math.sin(theta);
+            const x = sphereRadius * sinTheta * Math.cos(phi);
+            const y = sphereRadius * sinTheta * Math.sin(phi);
+            const z = sphereRadius * Math.cos(theta);
+            // Precompute normalised surface vector once at init.
+            // Previously normalize() was called every frame per point in
+            // renderFullAnimation(), burning a sqrt + 3 divides × point count × 60fps.
+            const m = Math.sqrt(x*x + y*y + z*z);
+            spherePoints.push({
+                x, y, z,
+                nx: x/m, ny: y/m, nz: z/m,
+                angleOffset:     lRandom(0, 2 * Math.PI),
+                speed:           lRandom(0.5, 1.5),
+                initialOffset:   lRandom(0, 2 * Math.PI),
+                initialDistance: lRandom(0.8, 1.2)
             });
         }
     }
+}
 
-    function drawPoint(x, y, alpha, size) {
-        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-        ctx.beginPath();
-        ctx.arc(x, y, size || pointSize, 0, 2 * Math.PI);
-        ctx.fill();
+function initRingPoints() {
+    for (let i = 0; i < ringCount; i++) {
+        const angle = (i / ringCount) * 2 * Math.PI;
+        ringPoints.push({
+            x: ringRadius * Math.cos(angle),
+            z: ringRadius * Math.sin(angle),
+            angleOffset:     lRandom(0, 2 * Math.PI),
+            speed:           lRandom(0.5, 1.5),
+            initialOffset:   lRandom(0, 2 * Math.PI),
+            initialDistance: lRandom(0.8, 1.2)
+        });
     }
+}
 
-    function renderIntro(progress) {
-        // Use different easing for different elements for a more dynamic feel
-        const sphereProgress = easeOutElastic(progress);
-        const ringProgress = easeOutBack(Math.min(1, progress * 1.2)); // Ring appears slightly faster
-        // Start with a glowing dot
-        const initialGlow = Math.max(0, 1 - progress * 3); // Fades out quickly
-        const initialSize = 2 + initialGlow * 8;
-        const initialAlpha = 0.7 + initialGlow * 0.3;
-        if(initialGlow > 0) {
-            // Draw the initial pulsing dot
-            drawPoint(0, 0, initialAlpha, initialSize);
-            // Add some particles emanating from the center
-            const particleCount = 6;
-            for(let i = 0; i < particleCount; i++) {
-                const angle = (i / particleCount) * Math.PI * 2;
-                const dist = initialGlow * 25;
-                const x = Math.cos(angle) * dist;
-                const y = Math.sin(angle) * dist;
-                const particleAlpha = initialAlpha * (1 - initialGlow);
-                const particleSize = initialSize * 0.3 * (1 - initialGlow);
-                drawPoint(x, y, particleAlpha, particleSize);
-            }
-        }
-        // Sphere emerges from center
-        const sphereScale = sphereProgress;
-        const sphereAlpha = progress * 0.8;
-        const sphereRotCos = Math.cos(sphereRotation * sphereProgress);
-        const sphereRotSin = Math.sin(sphereRotation * sphereProgress);
-        for(let i = 0; i < spherePoints.length; i++) {
-            const p = spherePoints[i];
-            // During intro, points come from random directions toward their final position
-            const introFactor = 1 - sphereProgress;
-            const introAngle = p.initialOffset + progress * 5;
-            // Calculate base position with oscillation
-            const angle = p.angleOffset + t * 0.01 * p.speed * sphereProgress;
-            const oscillation = 5 * Math.sin(angle) * sphereProgress;
-            const norm = normalize(p.x, p.y, p.z);
-            let x = p.x + norm.x * oscillation;
-            let y = p.y + norm.y * oscillation;
-            let z = p.z + norm.z * oscillation;
-            // Apply intro animation - points emerge from center
-            if(introFactor > 0) {
-                const emergeDist = 30 * introFactor * p.initialDistance;
-                x = x * sphereScale + Math.cos(introAngle) * emergeDist * introFactor;
-                y = y * sphereScale + Math.sin(introAngle) * emergeDist * introFactor;
-                z = z * sphereScale;
-            }
-            const rotatedX = x * sphereRotCos - z * sphereRotSin;
-            const rotatedZ = x * sphereRotSin + z * sphereRotCos;
-            const scaleFactor = mapValue(rotatedZ, -sphereRadius - 20, sphereRadius + 20, 0.5, 1.5) * sphereScale;
-            const finalX = rotatedX * scaleFactor;
-            const finalY = y * scaleFactor;
-            const pointAlpha = sphereAlpha * (0.5 + 0.5 * sphereProgress);
-            drawPoint(finalX, finalY, pointAlpha);
-        }
-        // Ring appears slightly after sphere
-        if(ringProgress > 0) {
-            const ringScale = ringProgress;
-            const ringAlpha = ringProgress * 0.7;
-            const ringRotCos = Math.cos(ringRotation * ringProgress);
-            const ringRotSin = Math.sin(ringRotation * ringProgress);
-            for(let i = 0; i < ringPoints.length; i++) {
-                const p = ringPoints[i];
-                // During intro, ring points spiral in from outside
-                const introFactor = 1 - ringProgress;
-                const introAngle = p.initialOffset + progress * 8;
-                let x = p.x;
-                let z = p.z;
-                // Apply intro animation - ring forms from particles spiraling inward
-                if(introFactor > 0) {
-                    const emergeDistFactor = 1 + introFactor * 3 * p.initialDistance;
-                    const angleOffset = introFactor * 5;
-                    x = x * emergeDistFactor * ringScale;
-                    z = z * emergeDistFactor * ringScale;
-                    // Add spiral effect
-                    const spiralX = Math.cos(introAngle + angleOffset) * 40 * introFactor;
-                    const spiralZ = Math.sin(introAngle + angleOffset) * 40 * introFactor;
-                    x += spiralX;
-                    z += spiralZ;
-                }
-                let rotatedX = x * ringRotCos + z * ringRotSin;
-                let rotatedZ = x * ringRotSin - z * ringRotCos;
-                let y = rotatedZ * sinTilt * ringScale;
-                rotatedZ *= cosTilt;
-                // Only apply oscillation when the ring is mostly formed
-                if(ringProgress > 0.7) {
-                    const oscillationStrength = (ringProgress - 0.7) / 0.3; // 0 to 1
-                    const angle = p.angleOffset + t * 0.01 * p.speed * oscillationStrength;
-                    const oscillation = 2 * Math.sin(angle) * oscillationStrength;
-                    const oscX = -y * oscillation;
-                    const oscY = oscillation;
-                    rotatedX += oscX;
-                    y -= oscY;
-                }
-                const scaleFactor = mapValue(rotatedZ, -ringRadius - 20, ringRadius + 20, 0.5, 1.5) * ringScale;
-                const finalX = rotatedX * scaleFactor;
-                const finalY = y * scaleFactor;
-                drawPoint(finalX, finalY, ringAlpha);
-            }
+function drawPoint(x, y, alpha, size) {
+    logoCtx.fillStyle = `rgba(255,255,255,${alpha})`;
+    logoCtx.beginPath();
+    logoCtx.arc(x, y, size || ptSize, 0, 2 * Math.PI);
+    logoCtx.fill();
+}
+
+function renderLogoIntro(progress) {
+    const sphereProgress = easeOutElastic(progress);
+    const ringProgress   = easeOutBack(Math.min(1, progress * 1.2));
+    const initialGlow    = Math.max(0, 1 - progress * 3);
+    const initialSize    = 2 + initialGlow * 8;
+    const initialAlpha   = 0.7 + initialGlow * 0.3;
+
+    if (initialGlow > 0) {
+        drawPoint(0, 0, initialAlpha, initialSize);
+        for (let i = 0; i < 6; i++) {
+            const a    = (i / 6) * Math.PI * 2;
+            const dist = initialGlow * 25;
+            drawPoint(Math.cos(a) * dist, Math.sin(a) * dist,
+                      initialAlpha * (1 - initialGlow),
+                      initialSize  * 0.3 * (1 - initialGlow));
         }
     }
 
-    function renderFullAnimation() {
-        const dynamicAlpha = 150 + 50 * Math.sin(t / 50);
-        const alpha = Math.min(Math.max(dynamicAlpha, 0), 255);
-        const sphereRotCos = Math.cos(sphereRotation);
-        const sphereRotSin = Math.sin(sphereRotation);
-        for(let i = 0; i < spherePoints.length; i++) {
-            const p = spherePoints[i];
-            const angle = p.angleOffset + t * 0.01 * p.speed;
-            const oscillation = 5 * Math.sin(angle);
-            const norm = normalize(p.x, p.y, p.z);
-            let x = p.x + norm.x * oscillation;
-            let y = p.y + norm.y * oscillation;
-            let z = p.z + norm.z * oscillation;
-            const rotatedX = x * sphereRotCos - z * sphereRotSin;
-            const rotatedZ = x * sphereRotSin + z * sphereRotCos;
-            const scaleFactor = mapValue(rotatedZ, -sphereRadius - 20, sphereRadius + 20, 0.5, 1.5);
-            const finalX = rotatedX * scaleFactor;
-            const finalY = y * scaleFactor;
-            drawPoint(finalX, finalY, alpha);
+    const sphereScale  = sphereProgress; // alias matches original
+    const sphereAlpha  = progress * 0.8;
+    const sphereRotCos = Math.cos(sphereRotation * sphereProgress);
+    const sphereRotSin = Math.sin(sphereRotation * sphereProgress);
+    const introFactor  = 1 - sphereProgress;
+
+    for (let i = 0; i < spherePoints.length; i++) {
+        const p          = spherePoints[i];
+        const introAngle = p.initialOffset + progress * 5;
+        const angle      = p.angleOffset + logoT * 0.01 * p.speed * sphereProgress;
+        const osc        = 5 * Math.sin(angle) * sphereProgress;
+        // Use precomputed normals — no normalize() call
+        let x = p.x + p.nx * osc;
+        let y = p.y + p.ny * osc;
+        let z = p.z + p.nz * osc;
+        if (introFactor > 0) {
+            const emergeDist = 30 * introFactor * p.initialDistance;
+            x = x * sphereScale + Math.cos(introAngle) * emergeDist * introFactor;
+            y = y * sphereScale + Math.sin(introAngle) * emergeDist * introFactor;
+            z = z * sphereScale;
         }
-        const ringRotCos = Math.cos(ringRotation);
-        const ringRotSin = Math.sin(ringRotation);
-        for(let i = 0; i < ringPoints.length; i++) {
+        const rx = x * sphereRotCos - z * sphereRotSin;
+        const rz = x * sphereRotSin + z * sphereRotCos;
+        const sf = mapValue(rz, -sphereRadius-20, sphereRadius+20, 0.5, 1.5) * sphereScale;
+        drawPoint(rx * sf, y * sf, sphereAlpha * (0.5 + 0.5 * sphereProgress));
+    }
+
+    if (ringProgress > 0) {
+        const ringAlpha    = ringProgress * 0.7;
+        const ringRotCos   = Math.cos(ringRotation * ringProgress);
+        const ringRotSin   = Math.sin(ringRotation * ringProgress);
+        const rIntroFactor = 1 - ringProgress;
+
+        for (let i = 0; i < ringPoints.length; i++) {
             const p = ringPoints[i];
-            let rotatedX = p.x * ringRotCos + p.z * ringRotSin;
-            let rotatedZ = p.x * ringRotSin - p.z * ringRotCos;
-            let y = rotatedZ * sinTilt;
-            rotatedZ *= cosTilt;
-            const angle = p.angleOffset + t * 0.01 * p.speed;
-            const oscillation = 2 * Math.sin(angle);
-            const oscX = -y * oscillation;
-            const oscY = oscillation;
-            rotatedX += oscX;
-            y -= oscY;
-            const scaleFactor = mapValue(rotatedZ, -ringRadius - 20, ringRadius + 20, 0.5, 1.5);
-            const finalX = rotatedX * scaleFactor;
-            const finalY = y * scaleFactor;
-            drawPoint(finalX, finalY, alpha);
+            let x = p.x, z = p.z;
+            if (rIntroFactor > 0) {
+                const introAngle  = p.initialOffset + progress * 8;
+                const emergeDF    = 1 + rIntroFactor * 3 * p.initialDistance;
+                const angleOffset = rIntroFactor * 5;
+                x = x * emergeDF * ringProgress + Math.cos(introAngle + angleOffset) * 40 * rIntroFactor;
+                z = z * emergeDF * ringProgress + Math.sin(introAngle + angleOffset) * 40 * rIntroFactor;
+            }
+            let rx = x * ringRotCos + z * ringRotSin;
+            let rz = x * ringRotSin - z * ringRotCos;
+            let y  = rz * sinTilt * ringProgress;
+            rz    *= cosTilt;
+            if (ringProgress > 0.7) {
+                const os  = (ringProgress - 0.7) / 0.3;
+                const osc = 2 * Math.sin(p.angleOffset + logoT * 0.01 * p.speed * os) * os;
+                rx -= y * osc;
+                y  -= osc;
+            }
+            const sf = mapValue(rz, -ringRadius-20, ringRadius+20, 0.5, 1.5) * ringProgress;
+            drawPoint(rx * sf, y * sf, ringAlpha);
         }
     }
+}
 
-    function render(timestamp) {
-        if(!animationStartTime) {
-            animationStartTime = timestamp;
-        }
-        const elapsed = timestamp - animationStartTime;
-        const introProgress = Math.min(1, elapsed / INTRO_DURATION);
-        // Clear canvas with background
-        ctx.fillStyle = bgColor;
-        ctx.fillRect(0, 0, width, height);
-        // Center the coordinate system
-        ctx.save();
-        ctx.translate(width / 2, height / 2);
-        if(introProgress < 1) {
-            // Still in intro animation
-            renderIntro(introProgress);
-        } else if(isIntroPlaying) {
-            // Just finished intro
-            isIntroPlaying = false;
-            renderFullAnimation();
-        } else {
-            // Normal animation
-            renderFullAnimation();
-        }
-        ctx.restore();
-        // Update animation parameters
-        t += 1;
-        sphereRotation += 0.3 * Math.PI / 180;
-        ringRotation += 2 * Math.PI / 180;
-        requestAnimationFrame(render);
+function renderLogoFull() {
+    // FIX: original passed integer 100–200 to rgba() alpha, which CSS clamps to 1
+    // (fully opaque always). Dividing by 255 restores the intended pulsing
+    // transparency effect the sin wave was designed to produce.
+    const alpha        = Math.min(Math.max(150 + 50 * Math.sin(logoT / 50), 0), 255) / 255;
+    const sphereRotCos = Math.cos(sphereRotation);
+    const sphereRotSin = Math.sin(sphereRotation);
+
+    for (let i = 0; i < spherePoints.length; i++) {
+        const p   = spherePoints[i];
+        const osc = 5 * Math.sin(p.angleOffset + logoT * 0.01 * p.speed);
+        // Use precomputed normals — eliminates sqrt + 3 divides per point per frame
+        const sx = p.x + p.nx * osc;
+        const sy = p.y + p.ny * osc;
+        const sz = p.z + p.nz * osc;
+        const rx = sx * sphereRotCos - sz * sphereRotSin;
+        const rz = sx * sphereRotSin + sz * sphereRotCos;
+        const sf = mapValue(rz, -sphereRadius-20, sphereRadius+20, 0.5, 1.5);
+        drawPoint(rx * sf, sy * sf, alpha);
     }
 
-    function init() {
-        initSpherePoints();
-        initRingPoints();
-        requestAnimationFrame(render);
+    const ringRotCos = Math.cos(ringRotation);
+    const ringRotSin = Math.sin(ringRotation);
+    for (let i = 0; i < ringPoints.length; i++) {
+        const p  = ringPoints[i];
+        let rx   = p.x * ringRotCos + p.z * ringRotSin;
+        let rz   = p.x * ringRotSin - p.z * ringRotCos;
+        let y    = rz * sinTilt;
+        rz      *= cosTilt;
+        const osc = 2 * Math.sin(p.angleOffset + logoT * 0.01 * p.speed);
+        rx -= y * osc;
+        y  -= osc;
+        const sf = mapValue(rz, -ringRadius-20, ringRadius+20, 0.5, 1.5);
+        drawPoint(rx * sf, y * sf, alpha);
     }
+}
 
-    init();
-    canvas.style.cursor = 'pointer';
-})();
+function tickLogo(timestamp) {
+    if (!logoAnimStartTime) logoAnimStartTime = timestamp;
+    const elapsed       = timestamp - logoAnimStartTime;
+    const introProgress = Math.min(1, elapsed / INTRO_DURATION);
 
-    </script>
+    logoCtx.fillStyle = 'black';
+    logoCtx.fillRect(0, 0, logoW, logoH);
+    logoCtx.save();
+    logoCtx.translate(logoW / 2, logoH / 2);
+
+    if (introProgress < 1) { renderLogoIntro(introProgress); }
+    else                   { renderLogoFull(); }
+
+    logoCtx.restore();
+    logoT++;
+    sphereRotation += 0.3 * Math.PI / 180;
+    ringRotation   += 2.0 * Math.PI / 180;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SECTION 4 — UNIFIED rAF LOOP
+// ═══════════════════════════════════════════════════════════════════════════════
+// Previously three independent requestAnimationFrame loops registered separately.
+// The browser fired each independently per vsync tick, tripling JS frame budget
+// and producing three separate canvas dirty regions for the compositor to resolve.
+// The animation center (ox/oy) was shared via a global that the background loop
+// wrote and the text loop read — with no ordering guarantee between callbacks.
+//
+// Now: one loop, one rAF registration, state flows top-to-bottom:
+//   tickBackground() → returns {ox, oy} → renderText(ox, oy) → tickLogo()
+
+// Mobile: track touch position as the magnification centre.
+// On desktop, ox/oy from the background animation drives it instead.
+// touchend resets to null so the animation resumes as soon as the finger lifts.
+let touchCX = null, touchCY = null;
+window.addEventListener('touchmove',  e => { touchCX = e.touches[0].clientX; touchCY = e.touches[0].clientY; }, { passive: true });
+window.addEventListener('touchstart', e => { touchCX = e.touches[0].clientX; touchCY = e.touches[0].clientY; }, { passive: true });
+window.addEventListener('touchend',   ()  => { touchCX = null; touchCY = null; },                               { passive: true });
+
+resizeTextCanvas();
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(resizeTextCanvas, 120);
+});
+
+initSpherePoints();
+initRingPoints();
+
+function mainLoop(timestamp) {
+    // 1. Tick background — increments f, draws, returns this frame's center
+    const { ox, oy } = tickBackground();
+
+    // 2. Render text — center passed directly as argument, zero globals, zero race
+    renderText(
+        touchCX !== null ? touchCX : ox,
+        touchCY !== null ? touchCY : oy
+    );
+
+    // 3. Tick logo — fully independent state, driven by timestamp for intro timer
+    tickLogo(timestamp);
+
+    requestAnimationFrame(mainLoop);
+}
+
+requestAnimationFrame(mainLoop);
+</script>
 </body>
 </html>
