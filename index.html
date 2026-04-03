@@ -45,7 +45,8 @@ import { prepareWithSegments, layoutWithLines } from '@chenglou/pretext';
 
 // ── Math aliases ──────────────────────────────────────────────────────────────
 const _sin=Math.sin,_cos=Math.cos,_floor=Math.floor,_round=Math.round,
-      _sqrt=Math.sqrt,_max=Math.max,_min=Math.min,_PI=Math.PI,_E=Math.E;
+      _sqrt=Math.sqrt,_max=Math.max,_min=Math.min,_PI=Math.PI,_E=Math.E,
+      _2PI=Math.PI*2;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SECTION 1 — BACKGROUND CANVAS
@@ -118,28 +119,37 @@ function L(xin, yin, zin) {
     return (32*(n0+n1+n2+n3)+1)*0.5;
 }
 
-function E(x, y, r05, r1, hv) {
+// Emits 4 moveTo/lineTo pairs into the currently open path.
+// Caller is responsible for beginPath() before and stroke() after.
+// Previously: 4 separate beginPath/stroke pairs per call (= 4 GPU flushes).
+// Now: pure geometry emission, amortised into caller's single stroke call.
+function addEStrokes(x, y, r05, r1, hv) {
     const x01=x*0.1, y01=y*0.1;
     const sz=(L(x*0.02,y*0.02,r05)*8+2)*hv;
     const ba=r1+x*0.05+y*0.05;
     const cp=_cos(ba), sp=_sin(ba);
     let l;
-    l=sz*L(x01,y01,r05);   bgCtx.beginPath();bgCtx.moveTo(x,y);bgCtx.lineTo(x+l*(-sp-cp),y+l*(cp-sp));  bgCtx.stroke();
-    l=sz*L(x01,y01,r05+1); bgCtx.beginPath();bgCtx.moveTo(x,y);bgCtx.lineTo(x+l*(sp-cp), y+l*(-sp-cp)); bgCtx.stroke();
-    l=sz*L(x01,y01,r05+2); bgCtx.beginPath();bgCtx.moveTo(x,y);bgCtx.lineTo(x+l*(sp+cp), y+l*(sp-cp));  bgCtx.stroke();
-    l=sz*L(x01,y01,r05+3); bgCtx.beginPath();bgCtx.moveTo(x,y);bgCtx.lineTo(x+l*(cp-sp), y+l*(sp+cp));  bgCtx.stroke();
+    l=sz*L(x01,y01,r05);   bgCtx.moveTo(x,y); bgCtx.lineTo(x+l*(-sp-cp),y+l*(cp-sp));
+    l=sz*L(x01,y01,r05+1); bgCtx.moveTo(x,y); bgCtx.lineTo(x+l*(sp-cp), y+l*(-sp-cp));
+    l=sz*L(x01,y01,r05+2); bgCtx.moveTo(x,y); bgCtx.lineTo(x+l*(sp+cp), y+l*(sp-cp));
+    l=sz*L(x01,y01,r05+3); bgCtx.moveTo(x,y); bgCtx.lineTo(x+l*(cp-sp), y+l*(sp+cp));
 }
 
+// All 5 interpolated positions (20 line segments) batched into one stroke call.
+// Previously: 5 × addEStrokes = 5 × 4 = 20 individual stroke calls per connector.
+// Now: 1 stroke call per connector.
 function drawConnector(x1, y1, x2, y2, r05, r02, r1, hv) {
     const dx=x2-x1, dy=y2-y1;
+    bgCtx.beginPath();
     for (let i = 0; i < 5; i++) {
         const tt=i*0.2;
         let x=x1+dx*tt, y=y1+dy*tt;
         const off=L(x*0.05,y*0.05,r05)*20;
         const ang=L(x*0.01,y*0.01,r02)*_PI*2;
         x+=_cos(ang)*off; y+=_sin(ang)*off;
-        E(x, y, r05, r1, hv);
+        addEStrokes(x, y, r05, r1, hv);
     }
+    bgCtx.stroke();
 }
 
 // Draws one background frame. Returns {ox, oy} — the animation center for this
@@ -179,7 +189,11 @@ function tickBackground() {
         const hv=0.5+(zv+100)*0.0075;
         setRGB((L(sx*0.01,sy*0.01,t)*360+f)%360);
         bgCtx.strokeStyle = 'rgba('+_cr+','+_cg+','+_cb+',0.5)';
-        E(sx, sy, r05, r1, hv);
+        // Particle: 4 segments batched into one stroke call (was 4 separate strokes)
+        bgCtx.beginPath();
+        addEStrokes(sx, sy, r05, r1, hv);
+        bgCtx.stroke();
+        // Connector: up to 20 segments batched into one stroke call (was 20 separate)
         if (i > 0) drawConnector(px, py, sx, sy, r05, r02, r1, hv);
         px=sx; py=sy;
     }
@@ -208,10 +222,53 @@ const MAX_SCALE             = 1.9;
 const MAG_RANGE             = MAGNIFICATION_RADIUS - EXCLUSION_RADIUS;
 const MAG_RADIUS_SQ         = MAGNIFICATION_RADIUS * MAGNIFICATION_RADIUS;
 
+// ── Pre-built string caches — zero allocation in the per-frame hot path ───────
+//
+// Font strings: fontSize = Math.round(BASE_FONT_SIZE * scale * 2) * 0.5
+//   scale ∈ [1.0, MAX_SCALE=1.9] → fontSize ∈ [20, 38], step 0.5
+//   Padded to [18, 42] for safety against floating-point edge cases.
+const _fontStrCache = new Map();
+for (let fs = 18; fs <= 42; fs += 0.5) {
+    _fontStrCache.set(fs, fs + 'px ' + FONT_FAMILY);
+}
+
+// Alpha fill styles: key = Math.round((0.85 + (scale-1)*0.2) * 100) (integer)
+//   scale ∈ [1.0, 1.9] → key ∈ [85, 103]. Padded to [80, 110] for safety.
+//   Using an integer key avoids float comparison hazard in the change-guard.
+const _fillCache = new Map();
+for (let a = 80; a <= 110; a++) {
+    _fillCache.set(a, 'rgba(255,255,255,' + (a * 0.01) + ')');
+}
+
+// ── Segment width cache — eliminates the duplicate canvas measureText pass ────
+//
+// pretext's prepareWithSegments() already measured all segments via canvas
+// internally and cached the results. buildWordCache() was then calling
+// textCtx.measureText() again for every token it derived from line.text —
+// paying for the measurement work twice, once per token occurrence.
+//
+// This Map memoises widths keyed by token string. Each unique token (e.g. "the",
+// " ", "Linux") is measured at most once for the lifetime of the page.
+// Valid as long as textCtx.font === FONT (font never changes here).
+const _segWidthCache = new Map();
+function _measureTok(tok) {
+    let w = _segWidthCache.get(tok);
+    if (w === undefined) {
+        w = textCtx.measureText(tok).width;
+        _segWidthCache.set(tok, w);
+    }
+    return w;
+}
+
 // ── Word cache — rebuilt only on resize ──────────────────────────────────────
 let wordXs=null, wordYs=null, wordWidths=null, wordCenterXs=null;
 let words=null, wordCount=0;
 let canvasWidth=0, canvasHeight=0;
+
+// Per-line metadata for the pass-1 bounding-box skip optimisation.
+// Storing these lets renderText() test a whole line against the magnification
+// circle in O(1) and avoid string concatenation entirely for lines outside it.
+let numLines=0, lineTexts=null, lineBaseYs=null, lineStartIdxs=null, lineEndIdxs=null;
 
 // ── Scale LUT ────────────────────────────────────────────────────────────────
 const LUT_SIZE = Math.ceil(MAGNIFICATION_RADIUS) + 1;
@@ -239,25 +296,40 @@ function tokenise(text) {
 }
 
 function buildWordCache(lines) {
+    numLines      = lines.length;
+    lineTexts     = new Array(numLines);
+    lineBaseYs    = new Float32Array(numLines);
+    lineStartIdxs = new Int32Array(numLines);
+    lineEndIdxs   = new Int32Array(numLines);
+
     let total = 0;
     for (let i = 0; i < lines.length; i++) if (lines[i].text) total += tokenise(lines[i].text).length;
+
     wordXs       = new Float32Array(total);
     wordYs       = new Float32Array(total);
     wordWidths   = new Float32Array(total);
     wordCenterXs = new Float32Array(total);
     words        = new Array(total);
-    // Font set ONCE before the measurement loop — never inside it
+
+    // Font must be set before any _measureTok calls so canvas uses the right metrics.
     textCtx.font = FONT;
     let idx = 0;
+
     for (let li = 0; li < lines.length; li++) {
-        const line = lines[li];
-        if (!line.text) continue;
+        const line  = lines[li];
         const baseY = li * LINE_HEIGHT + LINE_HEIGHT * 0.8;
+
+        lineBaseYs[li]    = baseY;
+        lineTexts[li]     = line.text || '';
+        lineStartIdxs[li] = idx;
+
+        if (!line.text) { lineEndIdxs[li] = idx; continue; }
+
         let x = TEXT_MARGIN;
         const tokens = tokenise(line.text);
         for (let ti = 0; ti < tokens.length; ti++) {
             const tok = tokens[ti];
-            const w   = textCtx.measureText(tok).width;
+            const w   = _measureTok(tok);  // cache hit on repeated words/spaces
             wordXs[idx]       = x;
             wordYs[idx]       = baseY;
             wordWidths[idx]   = w;
@@ -266,6 +338,7 @@ function buildWordCache(lines) {
             x += w;
             idx++;
         }
+        lineEndIdxs[li] = idx;
     }
     wordCount = idx;
 }
@@ -288,9 +361,6 @@ function resizeTextCanvas() {
     buildWordCache(lines);
 }
 
-// animCx/animCy are passed directly from the unified loop — no globals, no race.
-// The dirty check is removed: the animation center moves every frame by several
-// pixels, so the 1px² threshold never fired anyway.
 function renderText(animCx, animCy) {
     if (wordCount === 0) return;
     const rect    = textCanvas.getBoundingClientRect();
@@ -301,22 +371,55 @@ function renderText(animCx, animCy) {
     textCtx.textBaseline = 'alphabetic';
     textCtx.textAlign    = 'left';
 
-    // Pass 1 — words OUTSIDE the mag zone, batched per line
+    // Pass 1 — words OUTSIDE the mag zone.
+    //
+    // Previously: iterated every word, concatenated tokens into batchStr per
+    // line segment, paid for string allocation on every frame for all ~200 words.
+    //
+    // Now: iterate by LINE. A cheap Y-axis AABB test rejects the common case
+    // (most lines are vertically clear of the 150px-radius circle) in O(1) and
+    // draws the whole precomputed line string with one fillText — zero string
+    // allocation. Only lines that geometrically intersect the zone fall through
+    // to the word-by-word path with its partial string concat.
     textCtx.font      = FONT;
     textCtx.fillStyle = 'rgba(255,255,255,0.85)';
-    let batchStr='', batchX=0, batchY=-1;
-    const flush = () => { if (batchStr) { textCtx.fillText(batchStr, batchX, batchY); batchStr = ''; } };
-    for (let i = 0; i < wordCount; i++) {
-        const cy=wordYs[i], cx=wordCenterXs[i];
-        const dx=cx-centerX, dy=cy-centerY;
-        if (dx*dx + dy*dy < MAG_RADIUS_SQ) { flush(); batchY = -1; continue; }
-        if (cy !== batchY) { flush(); batchX = wordXs[i]; batchY = cy; }
-        batchStr += words[i];
-    }
-    flush();
 
-    // Pass 2 — words INSIDE the mag zone, individually scaled
-    let lastFontSize=-1, lastAlpha=-1;
+    for (let li = 0; li < numLines; li++) {
+        const baseY   = lineBaseYs[li];
+        const lineTop = li * LINE_HEIGHT;
+        const lineBot = lineTop + LINE_HEIGHT;
+
+        // Fast Y-axis reject: entire line is vertically outside the circle.
+        if (centerY < lineTop - MAGNIFICATION_RADIUS || centerY > lineBot + MAGNIFICATION_RADIUS) {
+            textCtx.fillText(lineTexts[li], TEXT_MARGIN, baseY);
+            continue;
+        }
+
+        // Line may intersect the zone — check each word individually.
+        const end = lineEndIdxs[li];
+        let batchStr = '', batchX = 0;
+        for (let i = lineStartIdxs[li]; i < end; i++) {
+            const dx = wordCenterXs[i] - centerX, dy = wordYs[i] - centerY;
+            if (dx*dx + dy*dy < MAG_RADIUS_SQ) {
+                if (batchStr) { textCtx.fillText(batchStr, batchX, baseY); batchStr = ''; }
+                continue;
+            }
+            if (!batchStr) batchX = wordXs[i];
+            batchStr += words[i];
+        }
+        if (batchStr) textCtx.fillText(batchStr, batchX, baseY);
+    }
+
+    // Pass 2 — words INSIDE the mag zone, individually scaled.
+    //
+    // Previously: constructed `fontSize + 'px ' + FONT_FAMILY` and
+    // `'rgba(255,255,255,' + alpha + ')'` as new strings on every font/alpha
+    // change, which is every few words in the zone. Also compared float alpha
+    // values, which has a precision hazard.
+    //
+    // Now: both strings are pre-built into Maps at init time. The alpha guard
+    // uses an integer key (avoids float comparison). Zero string allocation here.
+    let lastFontSize = -1, lastAlphaKey = -1;
     for (let i = 0; i < wordCount; i++) {
         const cy=wordYs[i], cx=wordCenterXs[i];
         const dx=cx-centerX, dy=cy-centerY;
@@ -324,11 +427,17 @@ function renderText(animCx, animCy) {
         if (distSq >= MAG_RADIUS_SQ) continue;
         const dist = Math.sqrt(distSq);
         if (dist < EXCLUSION_RADIUS) continue;
-        const scale = getMagScale(dist);
-        const fontSize = Math.round(BASE_FONT_SIZE * scale * 2) * 0.5;
-        if (fontSize !== lastFontSize) { textCtx.font = fontSize + 'px ' + FONT_FAMILY; lastFontSize = fontSize; }
-        const alpha = Math.round((0.85 + (scale - 1.0) * 0.2) * 100) * 0.01;
-        if (alpha !== lastAlpha) { textCtx.fillStyle = 'rgba(255,255,255,' + alpha + ')'; lastAlpha = alpha; }
+        const scale    = getMagScale(dist);
+        const fontSize = _round(BASE_FONT_SIZE * scale * 2) * 0.5;
+        if (fontSize !== lastFontSize) {
+            textCtx.font = _fontStrCache.get(fontSize) ?? (fontSize + 'px ' + FONT_FAMILY);
+            lastFontSize = fontSize;
+        }
+        const alphaKey = _round((0.85 + (scale - 1.0) * 0.2) * 100);
+        if (alphaKey !== lastAlphaKey) {
+            textCtx.fillStyle = _fillCache.get(alphaKey) ?? ('rgba(255,255,255,' + (alphaKey * 0.01) + ')');
+            lastAlphaKey = alphaKey;
+        }
         const nudge = wordWidths[i] * (scale - 1.0) * 0.5;
         textCtx.fillText(words[i], wordXs[i] - nudge, cy);
     }
@@ -353,16 +462,23 @@ const sphereRadius  = 15;
 const ringRadius    = 43;
 const ringTiltAngle = 6 * Math.PI / 180;
 const ptSize        = 0.7;
-// ringTiltDirection was always 1 — compute directly
 const sinTilt = Math.sin(ringTiltAngle);
 const cosTilt = Math.cos(ringTiltAngle);
+
+// Precomputed reciprocal constants for inlining mapValue in the logo loops.
+// mapValue(rz, -(r+20), r+20, 0.5, 1.5)
+//   = (rz + (r+20)) / ((r+20)*2) + 0.5
+//   = (rz + _xMAP_A) * _xMAP_INV + 0.5
+// Eliminates a function call + live division per point per frame (~1048 calls).
+const _SMAP_A   = sphereRadius + 20;        // 35
+const _SMAP_INV = 1 / (_SMAP_A * 2);        // 1/70
+const _RMAP_A   = ringRadius   + 20;        // 63
+const _RMAP_INV = 1 / (_RMAP_A * 2);        // 1/126
 
 let spherePoints = [], ringPoints = [];
 let logoT = 0, sphereRotation = 0, ringRotation = 0;
 
 function lRandom(min, max) { return Math.random() * (max - min) + min; }
-
-function mapValue(v, a, b, c, d) { return (v - a) * (d - c) / (b - a) + c; }
 
 function easeOutElastic(x) {
     const c4 = (2 * Math.PI) / 3;
@@ -380,9 +496,6 @@ function initSpherePoints() {
             const x = sphereRadius * sinTheta * Math.cos(phi);
             const y = sphereRadius * sinTheta * Math.sin(phi);
             const z = sphereRadius * Math.cos(theta);
-            // Precompute normalised surface vector once at init.
-            // Previously normalize() was called every frame per point in
-            // renderFullAnimation(), burning a sqrt + 3 divides × point count × 60fps.
             const m = Math.sqrt(x*x + y*y + z*z);
             spherePoints.push({
                 x, y, z,
@@ -410,10 +523,12 @@ function initRingPoints() {
     }
 }
 
+// drawPoint is retained ONLY for the intro glow burst (7 calls, each with a
+// distinct alpha and/or size). All sphere and ring points are batched instead.
 function drawPoint(x, y, alpha, size) {
     logoCtx.fillStyle = `rgba(255,255,255,${alpha})`;
     logoCtx.beginPath();
-    logoCtx.arc(x, y, size || ptSize, 0, 2 * Math.PI);
+    logoCtx.arc(x, y, size || ptSize, 0, _2PI);
     logoCtx.fill();
 }
 
@@ -424,50 +539,58 @@ function renderLogoIntro(progress) {
     const initialSize    = 2 + initialGlow * 8;
     const initialAlpha   = 0.7 + initialGlow * 0.3;
 
+    // Glow burst — 7 points with varying alpha/size between them.
+    // These must remain as individual drawPoint calls.
     if (initialGlow > 0) {
         drawPoint(0, 0, initialAlpha, initialSize);
         for (let i = 0; i < 6; i++) {
-            const a    = (i / 6) * Math.PI * 2;
+            const a    = (i / 6) * _2PI;
             const dist = initialGlow * 25;
-            drawPoint(Math.cos(a) * dist, Math.sin(a) * dist,
+            drawPoint(_cos(a) * dist, _sin(a) * dist,
                       initialAlpha * (1 - initialGlow),
                       initialSize  * 0.3 * (1 - initialGlow));
         }
     }
 
-    const sphereScale  = sphereProgress; // alias matches original
-    const sphereAlpha  = progress * 0.8;
-    const sphereRotCos = Math.cos(sphereRotation * sphereProgress);
-    const sphereRotSin = Math.sin(sphereRotation * sphereProgress);
+    // Sphere — alpha is constant for all points in this frame: batch into one fill.
+    // Previously: 648 individual fill() calls.  Now: 1.
+    const sphereRotCos = _cos(sphereRotation * sphereProgress);
+    const sphereRotSin = _sin(sphereRotation * sphereProgress);
     const introFactor  = 1 - sphereProgress;
+    const sphereAlpha  = progress * 0.8 * (0.5 + 0.5 * sphereProgress);
 
+    logoCtx.fillStyle = `rgba(255,255,255,${sphereAlpha})`;
+    logoCtx.beginPath();
     for (let i = 0; i < spherePoints.length; i++) {
         const p          = spherePoints[i];
         const introAngle = p.initialOffset + progress * 5;
-        const angle      = p.angleOffset + logoT * 0.01 * p.speed * sphereProgress;
-        const osc        = 5 * Math.sin(angle) * sphereProgress;
-        // Use precomputed normals — no normalize() call
+        const osc        = 5 * _sin(p.angleOffset + logoT * 0.01 * p.speed * sphereProgress) * sphereProgress;
         let x = p.x + p.nx * osc;
         let y = p.y + p.ny * osc;
         let z = p.z + p.nz * osc;
         if (introFactor > 0) {
             const emergeDist = 30 * introFactor * p.initialDistance;
-            x = x * sphereScale + Math.cos(introAngle) * emergeDist * introFactor;
-            y = y * sphereScale + Math.sin(introAngle) * emergeDist * introFactor;
-            z = z * sphereScale;
+            x = x * sphereProgress + _cos(introAngle) * emergeDist * introFactor;
+            y = y * sphereProgress + _sin(introAngle) * emergeDist * introFactor;
+            z = z * sphereProgress;
         }
         const rx = x * sphereRotCos - z * sphereRotSin;
         const rz = x * sphereRotSin + z * sphereRotCos;
-        const sf = mapValue(rz, -sphereRadius-20, sphereRadius+20, 0.5, 1.5) * sphereScale;
-        drawPoint(rx * sf, y * sf, sphereAlpha * (0.5 + 0.5 * sphereProgress));
+        const sf = ((rz + _SMAP_A) * _SMAP_INV + 0.5) * sphereProgress;
+        logoCtx.arc(rx * sf, y * sf, ptSize, 0, _2PI);
     }
+    logoCtx.fill();
 
+    // Ring — alpha is constant for all points in this frame: batch into one fill.
+    // Previously: 400 individual fill() calls.  Now: 1.
     if (ringProgress > 0) {
-        const ringAlpha    = ringProgress * 0.7;
-        const ringRotCos   = Math.cos(ringRotation * ringProgress);
-        const ringRotSin   = Math.sin(ringRotation * ringProgress);
+        const ringRotCos   = _cos(ringRotation * ringProgress);
+        const ringRotSin   = _sin(ringRotation * ringProgress);
         const rIntroFactor = 1 - ringProgress;
+        const ringAlpha    = ringProgress * 0.7;
 
+        logoCtx.fillStyle = `rgba(255,255,255,${ringAlpha})`;
+        logoCtx.beginPath();
         for (let i = 0; i < ringPoints.length; i++) {
             const p = ringPoints[i];
             let x = p.x, z = p.z;
@@ -475,8 +598,8 @@ function renderLogoIntro(progress) {
                 const introAngle  = p.initialOffset + progress * 8;
                 const emergeDF    = 1 + rIntroFactor * 3 * p.initialDistance;
                 const angleOffset = rIntroFactor * 5;
-                x = x * emergeDF * ringProgress + Math.cos(introAngle + angleOffset) * 40 * rIntroFactor;
-                z = z * emergeDF * ringProgress + Math.sin(introAngle + angleOffset) * 40 * rIntroFactor;
+                x = x * emergeDF * ringProgress + _cos(introAngle + angleOffset) * 40 * rIntroFactor;
+                z = z * emergeDF * ringProgress + _sin(introAngle + angleOffset) * 40 * rIntroFactor;
             }
             let rx = x * ringRotCos + z * ringRotSin;
             let rz = x * ringRotSin - z * ringRotCos;
@@ -484,51 +607,59 @@ function renderLogoIntro(progress) {
             rz    *= cosTilt;
             if (ringProgress > 0.7) {
                 const os  = (ringProgress - 0.7) / 0.3;
-                const osc = 2 * Math.sin(p.angleOffset + logoT * 0.01 * p.speed * os) * os;
+                const osc = 2 * _sin(p.angleOffset + logoT * 0.01 * p.speed * os) * os;
                 rx -= y * osc;
                 y  -= osc;
             }
-            const sf = mapValue(rz, -ringRadius-20, ringRadius+20, 0.5, 1.5) * ringProgress;
-            drawPoint(rx * sf, y * sf, ringAlpha);
+            const sf = ((rz + _RMAP_A) * _RMAP_INV + 0.5) * ringProgress;
+            logoCtx.arc(rx * sf, y * sf, ptSize, 0, _2PI);
         }
+        logoCtx.fill();
     }
 }
 
 function renderLogoFull() {
-    // FIX: original passed integer 100–200 to rgba() alpha, which CSS clamps to 1
-    // (fully opaque always). Dividing by 255 restores the intended pulsing
-    // transparency effect the sin wave was designed to produce.
-    const alpha        = Math.min(Math.max(150 + 50 * Math.sin(logoT / 50), 0), 255) / 255;
-    const sphereRotCos = Math.cos(sphereRotation);
-    const sphereRotSin = Math.sin(sphereRotation);
+    // alpha is a single scalar for this frame — valid for all 1,048 points.
+    // Previously: fillStyle set + beginPath + arc + fill called 1,048 times.
+    // Now: fillStyle set once, all arcs accumulated into two paths, two fills.
+    const alpha        = _min(_max(150 + 50 * _sin(logoT / 50), 0), 255) / 255;
+    const sphereRotCos = _cos(sphereRotation);
+    const sphereRotSin = _sin(sphereRotation);
+    const ringRotCos   = _cos(ringRotation);
+    const ringRotSin   = _sin(ringRotation);
 
+    logoCtx.fillStyle = `rgba(255,255,255,${alpha})`;
+
+    // Sphere — 648 arcs, one fill
+    logoCtx.beginPath();
     for (let i = 0; i < spherePoints.length; i++) {
         const p   = spherePoints[i];
-        const osc = 5 * Math.sin(p.angleOffset + logoT * 0.01 * p.speed);
-        // Use precomputed normals — eliminates sqrt + 3 divides per point per frame
-        const sx = p.x + p.nx * osc;
-        const sy = p.y + p.ny * osc;
-        const sz = p.z + p.nz * osc;
-        const rx = sx * sphereRotCos - sz * sphereRotSin;
-        const rz = sx * sphereRotSin + sz * sphereRotCos;
-        const sf = mapValue(rz, -sphereRadius-20, sphereRadius+20, 0.5, 1.5);
-        drawPoint(rx * sf, sy * sf, alpha);
+        const osc = 5 * _sin(p.angleOffset + logoT * 0.01 * p.speed);
+        const sx  = p.x + p.nx * osc;
+        const sy  = p.y + p.ny * osc;
+        const sz  = p.z + p.nz * osc;
+        const rx  = sx * sphereRotCos - sz * sphereRotSin;
+        const rz  = sx * sphereRotSin + sz * sphereRotCos;
+        const sf  = (rz + _SMAP_A) * _SMAP_INV + 0.5;
+        logoCtx.arc(rx * sf, sy * sf, ptSize, 0, _2PI);
     }
+    logoCtx.fill();
 
-    const ringRotCos = Math.cos(ringRotation);
-    const ringRotSin = Math.sin(ringRotation);
+    // Ring — 400 arcs, one fill
+    logoCtx.beginPath();
     for (let i = 0; i < ringPoints.length; i++) {
         const p  = ringPoints[i];
         let rx   = p.x * ringRotCos + p.z * ringRotSin;
         let rz   = p.x * ringRotSin - p.z * ringRotCos;
         let y    = rz * sinTilt;
         rz      *= cosTilt;
-        const osc = 2 * Math.sin(p.angleOffset + logoT * 0.01 * p.speed);
+        const osc = 2 * _sin(p.angleOffset + logoT * 0.01 * p.speed);
         rx -= y * osc;
         y  -= osc;
-        const sf = mapValue(rz, -ringRadius-20, ringRadius+20, 0.5, 1.5);
-        drawPoint(rx * sf, y * sf, alpha);
+        const sf = (rz + _RMAP_A) * _RMAP_INV + 0.5;
+        logoCtx.arc(rx * sf, y * sf, ptSize, 0, _2PI);
     }
+    logoCtx.fill();
 }
 
 function tickLogo(timestamp) {
@@ -553,18 +684,10 @@ function tickLogo(timestamp) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // SECTION 4 — UNIFIED rAF LOOP
 // ═══════════════════════════════════════════════════════════════════════════════
-// Previously three independent requestAnimationFrame loops registered separately.
-// The browser fired each independently per vsync tick, tripling JS frame budget
-// and producing three separate canvas dirty regions for the compositor to resolve.
-// The animation center (ox/oy) was shared via a global that the background loop
-// wrote and the text loop read — with no ordering guarantee between callbacks.
-//
-// Now: one loop, one rAF registration, state flows top-to-bottom:
+// One loop, one rAF registration. State flows top-to-bottom:
 //   tickBackground() → returns {ox, oy} → renderText(ox, oy) → tickLogo()
 
 // Mobile: track touch position as the magnification centre.
-// On desktop, ox/oy from the background animation drives it instead.
-// touchend resets to null so the animation resumes as soon as the finger lifts.
 let touchCX = null, touchCY = null;
 window.addEventListener('touchmove',  e => { touchCX = e.touches[0].clientX; touchCY = e.touches[0].clientY; }, { passive: true });
 window.addEventListener('touchstart', e => { touchCX = e.touches[0].clientX; touchCY = e.touches[0].clientY; }, { passive: true });
@@ -581,18 +704,12 @@ initSpherePoints();
 initRingPoints();
 
 function mainLoop(timestamp) {
-    // 1. Tick background — increments f, draws, returns this frame's center
     const { ox, oy } = tickBackground();
-
-    // 2. Render text — center passed directly as argument, zero globals, zero race
     renderText(
         touchCX !== null ? touchCX : ox,
         touchCY !== null ? touchCY : oy
     );
-
-    // 3. Tick logo — fully independent state, driven by timestamp for intro timer
     tickLogo(timestamp);
-
     requestAnimationFrame(mainLoop);
 }
 
